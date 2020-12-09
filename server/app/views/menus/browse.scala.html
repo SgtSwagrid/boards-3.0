@@ -1,0 +1,8 @@
+@import models.schema.UserSchema._
+
+@(user: Option[User] = None)(implicit request: RequestHeader)
+
+@main("Boards | Browse", user) {
+  <div></div>
+  <script type="text/javascript">browse()</script>
+}

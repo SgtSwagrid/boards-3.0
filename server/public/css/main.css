@@ -1,0 +1,114 @@
+.small-text {
+  font-size: 16px;
+}
+
+.medium-text {
+  font-size: 24px;
+}
+
+.large-text {
+  font-size: 32px;
+}
+
+.huge-text {
+  font-size: 48px;
+}
+
+body {
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+}
+
+main {
+  flex: 1 0 auto;
+}
+
+.block {
+  width: 100%;
+}
+
+.icon {
+  width: 25px;
+  height: 25px;
+  display: inline-block;
+  vertical-align: middle;
+  margin: 5px;
+}
+
+.icon-text {
+  display: inline-block;
+  vertical-align: middle;
+  margin: 5px;
+}
+
+.nav-wrapper {
+  background-image: url("/assets/img/dark_geometric.png");
+  padding-left: 20px;
+  border-style: none none solid none;
+  border-width: 4px;
+  border-color: plum;
+}
+
+.page-footer {
+  background-image: url("/assets/img/dark_geometric.png");
+  border-style: solid none none none;
+  border-width: 4px;
+  border-color: plum;
+}
+
+.copyright {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 20px;
+}
+
+.footer-logo {
+  width: 50px;
+  height: 50px;
+  vertical-align: middle;
+}
+
+.btn {
+  height: 45px;
+}
+
+.notification {
+  border-radius: 4px;
+  border-style: solid;
+  border-color: darkslategray;
+}
+
+.login-panel {
+  border-radius: 4px;
+  margin-top: 100px;
+  margin-bottom: 100px;
+  border-style: none none solid none;
+  border-width: 4px;
+  border-color: plum;
+}
+
+.login-panel-header {
+  background-image: url("/assets/img/dark_geometric.png");
+  border-radius: 4px 4px 0px 0px;
+  padding: 1px;
+  border-style: none none solid none;
+  border-width: 4px;
+  border-color: #fbc02d;
+}
+
+.login-panel-body {
+  padding: 20px;
+}
+
+.menu-item {
+  margin-top: 10px;
+  border-radius: 4px;
+  border-style: none none none solid;
+  border-width: 6px;
+  border-color: #fbc02d;
+}
+
+.menu-item-body {
+  padding: 10px 25px;
+}

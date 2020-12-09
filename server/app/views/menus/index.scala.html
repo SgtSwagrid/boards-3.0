@@ -1,0 +1,39 @@
+@import models.schema.UserSchema._
+
+@(user: Option[User] = None)(implicit request: RequestHeader)
+
+@main("Boards", user) {
+  <div class="container center-align">
+    <div class="row">
+      <div class="col m8 s12 push-m2">
+        <br><br><br>
+        <h2 class="white-text">Welcome to Boards.</h2>
+        <br>
+        <p class="white-text">
+          Boards is an online platform for the design and testing of game playing bots.
+          With an assortment of abstract strategy board games available,
+          Boards is able to facilitate gameplay featuring any combination of human and computer-controlled players.
+        </p>
+        <br>
+        <img src='@routes.Assets.versioned("img/chess.svg")' style="width: 250px; height: 250px;">
+        <br><br><br>
+        <div class="row">
+          <div class="col s6 right-align">
+            <a class="btn yellow darken-2 black-text waves-effect" href="/games/create"
+              style="width: 150px; height: 45px;">
+              <img class="icon" src='@routes.Assets.versioned("img/play.svg")'>
+              <p class="grey-text text-darken-4 icon-text">New</p>
+            </a>
+          </div>
+          <div class="col s6 left-align">
+            <a class="btn yellow darken-2 black-text waves-effect" href="/games/browse"
+              style="width: 150px; height: 45px;">
+              <img class="icon" src='@routes.Assets.versioned("img/magnifying-glass.svg")'>
+              <p class="grey-text text-darken-4 icon-text">Browse</p>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+}

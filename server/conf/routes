@@ -1,0 +1,13 @@
+GET  /                      controllers.MenuController.index
+GET  /games/browse          controllers.MenuController.browse
+GET  /games/create          controllers.MenuController.create
+
+GET  /users/login           controllers.UserController.login(next: String ?= "/")
+POST /users/login           controllers.UserController.login(next: String ?= "/")
+GET  /users/register        controllers.UserController.register(next: String ?= "/")
+POST /users/register        controllers.UserController.register(next: String ?= "/")
+GET  /users/logout          controllers.UserController.logout(next: String ?= "/")
+GET  /users/profile         controllers.UserController.userProfile
+
+GET  /assets/*file          controllers.Assets.at(file)
+GET  /versionedAssets/*file controllers.Assets.versioned(path="/public", file: Asset)

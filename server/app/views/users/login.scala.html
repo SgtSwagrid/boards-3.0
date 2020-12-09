@@ -1,0 +1,37 @@
+@import models.schema.UserSchema._
+
+@(user: Option[User] = None)(implicit request: RequestHeader, flash: Flash)
+
+@main("Boards | Login", user) {
+  <div class="container center-align">
+    <div class="row">
+      <div class="col s12 m8 push-m2 l6 push-l3 xl4 push-xl4">
+        <div class="login-panel grey darken-3 z-depth-3">
+          <div class="login-panel-header blue-grey lighten-1 z-depth-1">
+            <h5 class="white-text">Login</h5>
+          </div>
+          <div class="login-panel-body">
+            <form method="POST">
+              @helper.CSRF.formField
+              <div class="input-field">
+                <input class="validate white-text" id="username" name="username" type="text">
+                <label class="white-text" for="username">Username</label>
+              </div>
+              <div class="input-field">
+                <input class="validate white-text" id="password" name="password" type="password">
+                <label class="white-text" for="password">Password</label>
+              </div>
+              <p class="red-text">@flash.get("error")</p>
+              <button class="btn grey darken-2 waves-effect" type="submit"
+                  style="height: 45px; margin: 20px;">
+                <img class="icon" src='@routes.Assets.versioned("img/login.svg")'>
+                <p class="white-text text-darken-4 icon-text">Login</p>
+              </button>
+            </form>
+            <a class="white-text" href="/users/register">Create account</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+}

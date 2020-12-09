@@ -1,0 +1,14 @@
+@import models.schema.UserSchema._
+
+@(user: User)(implicit request: RequestHeader, flash: Flash)
+
+@main("Boards | Profile", Some(user)) {
+  <div class="container center-align">
+    <h3 class="white-text">@user.username</h3>
+    <p class="white-text">
+      <span class="green-text">0 Wins</span> &bull;
+      <span class="yellow-text">0 Draws</span> &bull;
+      <span class="red-text">0 Losses</span>
+    </p>
+  </div>
+}
