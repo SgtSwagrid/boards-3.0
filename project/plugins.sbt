@@ -1,3 +1,5 @@
+logLevel := Level.Warn
+
 resolvers += "Typesafe repository" at "https://repo.typesafe.com/typesafe/releases/"
 
 addSbtPlugin("com.vmunier"        % "sbt-web-scalajs"          % "1.1.0")
