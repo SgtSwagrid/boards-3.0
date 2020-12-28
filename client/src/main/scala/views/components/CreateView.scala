@@ -1,6 +1,8 @@
 package views
 
-import org.scalajs.dom._
+import scala.concurrent.ExecutionContext.Implicits.global
+import org.scalajs.dom.{document, html, window}
+import org.scalajs.dom.ext.Ajax
 import scala.scalajs.js.annotation.JSExportTopLevel
 import slinky.core.{Component, StatelessComponent}
 import slinky.core.facade.ReactElement
@@ -11,6 +13,9 @@ import games.core._
 import components.PaginationComponent
 
 object CreateView {
+
+  val CreateRoute = "/games/create/"
+  val GameRoute   = "/games/board/"
 
   @JSExportTopLevel("create")
   def create() = {
@@ -27,16 +32,16 @@ object CreateView {
     case class State(games: List[Game], page: Int)
     def initialState = State(Manifest.Games, 0)
 
-    final val gamesPerPage = 6
+    final val GamesPerPage = 6
 
     def render() = div (
       div(className := "input-field") (
-        input(className := "white-text", id := "search", `type` := "text",
+        input(className := "white-text", id := "search", `type` := "text", autoFocus,
           onChange := (e => search(e.target.value))
         ),
         label(className := "white-text", htmlFor := "search") ("Search games")
       ),
-      state.games.drop(state.page * gamesPerPage).take(gamesPerPage).map { game =>
+      state.games.drop(state.page * GamesPerPage).take(GamesPerPage).map { game =>
         div(key := game.name) (GameComponent(game))
       },
       PaginationComponent(state.page, pages, goto _)
@@ -47,26 +52,35 @@ object CreateView {
       val games = Manifest.Games.filter {
         _.name.toLowerCase.contains(string.toLowerCase)
       }
-      val page = Math.min(state.page, games.size-1)
+      val page = state.page min (games.size-1)
       setState(state.copy(games = games, page = 0))
     }
 
     private def goto(page: Int) =
-      setState(state.copy(page = Math.max(0, Math.min(pages-1, page))))
+      setState(state.copy(page = 0 max ((pages-1) min page)))
       
     private def pages =
-      Math.max(((state.games.size - 1) / gamesPerPage) + 1, 1)
+      (((state.games.size - 1) / GamesPerPage) + 1) max 1
   }
 
   @react class GameComponent extends StatelessComponent {
 
     case class Props(game: Game)
 
-    def render() = div(
-        className := "menu-item block grey darken-3 z-depth-2 waves-effect") (
+    def render() = div (
+      className := "menu-item block grey darken-3 z-depth-2 waves-effect hoverable",
+      onClick := (_ => create(props.game))
+    ) (
       div(className := "menu-item-body") (
         span(className := "white-text medium-text") (props.game.name)
       )
     )
+
+    private def create(game: Game) = {
+
+      FetchJson.post(CreateRoute + game.id) { boardId: String =>
+        window.location.href = GameRoute + boardId
+      }
+    }
   }
 }

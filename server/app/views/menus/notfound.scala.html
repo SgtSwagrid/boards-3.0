@@ -1,0 +1,18 @@
+@import models.schema.UserSchema._
+
+@(user: Option[User] = None)(implicit request: RequestHeader)
+
+@main("Boards | Not Found", user) {
+  <div class="valign-wrapper">
+    <div class="container">
+      <div class="center-align">
+        <h3 class="white-text title">This page could not be found.</h3>
+        <a class="btn yellow darken-2 black-text waves-effect" href="/"
+          style="width: 150px; height: 45px;">
+          <img class="icon" src='@routes.Assets.versioned("img/favicon.png")'>
+          <p class="grey-text text-darken-4 icon-text">Go Home</p>
+        </a>
+      </div>
+    </div>
+  </div>
+}

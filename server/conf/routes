@@ -2,6 +2,9 @@ GET  /                      controllers.MenuController.index
 GET  /games/browse          controllers.MenuController.browse
 GET  /games/create          controllers.MenuController.create
 
+POST /games/create/:gameId  controllers.BoardController.create(gameId: Int)
+GET  /games/board/:boardId  controllers.BoardController.game(boardId: String)
+
 GET  /users/login           controllers.UserController.login(next: String ?= "/")
 POST /users/login           controllers.UserController.login(next: String ?= "/")
 GET  /users/register        controllers.UserController.register(next: String ?= "/")

@@ -51,8 +51,8 @@ object UserForms {
   case class Username private (username: String)
 
   sealed trait InvalidUsername extends InvalidUser
-  case object UnknownUsername extends InvalidUser
-  case object UsernameTaken extends InvalidUser
+  case object UnknownUsername extends InvalidUsername
+  case object UsernameTaken extends InvalidUsername
   case object UsernameTooShort extends InvalidUsername
   case object UsernameTooLong extends InvalidUsername
   case object IllegalUsernameChar extends InvalidUsername
@@ -81,7 +81,7 @@ object UserForms {
   case class Password private (password: String)
 
   sealed trait InvalidPassword extends InvalidUser
-  case object IncorrectPassword extends InvalidUser
+  case object IncorrectPassword extends InvalidPassword
   case object PasswordTooShort extends InvalidPassword
   case object PasswordTooLong extends InvalidPassword
   case object IllegalPasswordChar extends InvalidPassword

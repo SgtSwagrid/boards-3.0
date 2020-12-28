@@ -13,8 +13,8 @@ import models.UserModel
 @Singleton
 class MenuController @Inject()
     (protected val dbConfigProvider: DatabaseConfigProvider, cc: ControllerComponents)
-    (implicit ec: ExecutionContext)
-    extends AbstractController(cc) with HasDatabaseConfigProvider[JdbcProfile] {
+    (protected implicit val ec: ExecutionContext) extends AbstractController(cc)
+    with HasDatabaseConfigProvider[JdbcProfile] with UserRequest {
 
   private val userModel = new UserModel(db)
   
@@ -31,31 +31,8 @@ class MenuController @Inject()
   }
 
   def create() = Action.async { implicit request =>
-    withUserOpt { user =>
+    withUser { user =>
       Future.successful(Ok(views.html.menus.create(user)))
-    }
-  }
-
-  private def withUser(f: User => Future[Result])
-      (implicit request: Request[AnyContent]): Future[Result] = {
-    
-    request.session.get("userId") match {
-      case Some(userId) => userModel.userById(userId.toInt) flatMap {
-        case Some(user) => f(user)
-        case None => Future.successful(
-          Redirect(routes.MenuController.index()))
-      }
-      case None => Future.successful(
-        Redirect(routes.UserController.login(request.path)))
-    }
-  }
-
-  private def withUserOpt(f: Option[User] => Future[Result])
-      (implicit request: Request[AnyContent]): Future[Result] = {
-    
-    request.session.get("userId") match {
-      case Some(userId) => userModel.userById(userId.toInt).flatMap(f)
-      case None => f(None)
     }
   }
 }

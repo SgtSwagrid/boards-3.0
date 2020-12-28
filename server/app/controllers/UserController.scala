@@ -1,11 +1,11 @@
 package controllers
 
 import javax.inject._
+import scala.concurrent.{ExecutionContext, Future}
 import play.api.mvc.{AbstractController, ControllerComponents, Request, Result, AnyContent}
 import slick.jdbc.JdbcProfile
 import slick.jdbc.MySQLProfile.api._
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
-import scala.concurrent.{ExecutionContext, Future}
 import models.schema.UserSchema._
 import models.UserModel
 import forms.UserForms._
@@ -13,8 +13,8 @@ import forms.UserForms._
 @Singleton
 class UserController @Inject()
     (protected val dbConfigProvider: DatabaseConfigProvider, cc: ControllerComponents)
-    (implicit ec: ExecutionContext)
-    extends AbstractController(cc) with HasDatabaseConfigProvider[JdbcProfile] {
+    (protected implicit val ec: ExecutionContext) extends AbstractController(cc)
+    with HasDatabaseConfigProvider[JdbcProfile] with UserRequest {
   
   private val userModel = new UserModel(db)
 
@@ -59,29 +59,6 @@ class UserController @Inject()
   def userProfile() = Action.async { implicit request =>
     withUser { user =>
       Future.successful(Ok(views.html.users.profile(user)))
-    }
-  }
-
-  private def withUser(f: User => Future[Result])
-      (implicit request: Request[AnyContent]): Future[Result] = {
-    
-    request.session.get("userId") match {
-      case Some(userId) => userModel.userById(userId.toInt) flatMap {
-        case Some(user) => f(user)
-        case None => Future.successful(
-          Redirect(routes.MenuController.index()))
-      }
-      case None => Future.successful(
-        Redirect(routes.UserController.login(request.path)))
-    }
-  }
-
-  private def withUserOpt(f: Option[User] => Future[Result])
-      (implicit request: Request[AnyContent]): Future[Result] = {
-    
-    request.session.get("userId") match {
-      case Some(userId) => userModel.userById(userId.toInt).flatMap(f)
-      case None => f(None)
     }
   }
 

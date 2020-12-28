@@ -1,0 +1,9 @@
+@import models.schema.UserSchema._
+
+@(user: User, boardId: String)(implicit request: RequestHeader)
+
+@main("Boards | Play", Some(user)) {
+  <div id="root"></div>
+  <input type="hidden" id="boardId" value="@boardId"></input>
+  <script type="text/javascript">board()</script>
+}
