@@ -48,18 +48,22 @@ main {
 }
 
 .nav-wrapper {
-  background-image: url("/assets/img/dark_geometric.png");
+  /*background-image: url("/assets/img/dark_geometric.png");*/
   padding-left: 20px;
-  border-style: none none solid none;
+  /*border-style: none none solid none;
   border-width: 4px;
-  border-color: plum;
+  border-color: plum;*/
 }
 
 .page-footer {
-  background-image: url("/assets/img/dark_geometric.png");
-  border-style: solid none none none;
+  /*background-image: url("/assets/img/dark_geometric.png");*/
+  /*border-style: solid none none none;
   border-width: 4px;
-  border-color: plum;
+  border-color: plum;*/
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
 }
 
 .copyright {
@@ -116,4 +120,23 @@ main {
 
 .menu-item-body {
   padding: 10px 25px;
+}
+
+.sidebar {
+  position: fixed;
+  left: 0;
+  height: 100%;
+  width: 275px;
+  padding-top: 0;
+}
+
+.sidebar-header {
+  position: relative;
+  top: 0;
+  width: 100%;
+  height: 60px;
+  border-style: none none solid none;
+  border-width: 4px;
+  border-color: #fbc02d;
+  padding-left: 10px;
 }

@@ -13,11 +13,11 @@ import games.core.GameInstance
 
 object BoardView {
 
+  val boardId = document.getElementById("boardId")
+    .asInstanceOf[html.Input].value
+
   @JSExportTopLevel("board")
   def board() = {
-
-    val boardId = document.getElementById("boardId")
-      .asInstanceOf[html.Input].value
     
     ReactDOM.render (
       GameComponent(boardId),
@@ -31,6 +31,19 @@ object BoardView {
     type State = Option[GameInstance]
     def initialState = None
 
-    def render() = div()
+    def render() = SidebarComponent(props.boardId)
+  }
+
+  @react class SidebarComponent extends Component {
+
+    case class Props(boardId: String)
+    type State = Option[Int]
+    def initialState = None
+
+    def render() = div(className := "sidebar grey darken-2") (
+      div(className := "sidebar-header grey darken-3") (
+        span(className := "large-text white-text") (boardId)
+      )
+    )
   }
 }

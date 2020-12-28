@@ -8,12 +8,12 @@ import play.api.libs.json._
 
 object FetchJson {
   
-  private val CsrfToken = document.getElementById("csrfToken")
+  private val csrfToken = document.getElementById("csrfToken")
     .asInstanceOf[html.Input].value
 
   private val headers = Map (
     "Content-Type" -> "application/json",
-    "Csrf-Token" -> CsrfToken
+    "Csrf-Token" -> csrfToken
   )
 
   def getJson[B](url: String)(success: B => Unit)

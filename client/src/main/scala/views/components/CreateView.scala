@@ -14,8 +14,8 @@ import components.PaginationComponent
 
 object CreateView {
 
-  val CreateRoute = "/games/create/"
-  val GameRoute   = "/games/board/"
+  val createRoute = "/games/create/"
+  val gameRoute   = "/games/board/"
 
   @JSExportTopLevel("create")
   def create() = {
@@ -32,7 +32,7 @@ object CreateView {
     case class State(games: List[Game], page: Int)
     def initialState = State(Manifest.Games, 0)
 
-    final val GamesPerPage = 6
+    final val pageSize = 6
 
     def render() = div (
       div(className := "input-field") (
@@ -41,7 +41,7 @@ object CreateView {
         ),
         label(className := "white-text", htmlFor := "search") ("Search games")
       ),
-      state.games.drop(state.page * GamesPerPage).take(GamesPerPage).map { game =>
+      state.games.drop(state.page * pageSize).take(pageSize).map { game =>
         div(key := game.name) (GameComponent(game))
       },
       PaginationComponent(state.page, pages, goto _)
@@ -60,7 +60,7 @@ object CreateView {
       setState(state.copy(page = 0 max ((pages-1) min page)))
       
     private def pages =
-      (((state.games.size - 1) / GamesPerPage) + 1) max 1
+      (((state.games.size - 1) / pageSize) + 1) max 1
   }
 
   @react class GameComponent extends StatelessComponent {
@@ -78,8 +78,8 @@ object CreateView {
 
     private def create(game: Game) = {
 
-      FetchJson.post(CreateRoute + game.id) { boardId: String =>
-        window.location.href = GameRoute + boardId
+      FetchJson.post(createRoute + game.id) { boardId: String =>
+        window.location.href = gameRoute + boardId
       }
     }
   }

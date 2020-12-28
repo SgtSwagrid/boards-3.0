@@ -10,7 +10,7 @@ class BoardModel(db: Database)(implicit ec: ExecutionContext) {
   
   def createBoard(gameId: Int, userId: Int): Future[BoardRow] = {
 
-    val boardId = (random() * (1 << 20)).toInt.toHexString.toUpperCase
+    val boardId = randomId()
     val board = BoardRow(id=boardId, gameId=gameId)
     val player = PlayerRow(userId=Some(userId),
       boardId=boardId, turnOrder=0, isOwner=true)
@@ -35,4 +35,8 @@ class BoardModel(db: Database)(implicit ec: ExecutionContext) {
       .filter(_.userId === userId)
       .result.headOption)
   }
+
+  private def randomId() =
+    (random() * (1 << 20)).toInt.toHexString
+      .toUpperCase.padTo(5, "0").reverse.toString
 }
