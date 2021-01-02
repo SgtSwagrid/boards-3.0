@@ -14,8 +14,8 @@ import components.PaginationComponent
 
 object CreateView {
 
-  val createRoute = "/games/create/"
-  val gameRoute   = "/games/board/"
+  private val createRoute = "/games/create/"
+  private val gameRoute   = "/games/board/"
 
   @JSExportTopLevel("create")
   def create() = {

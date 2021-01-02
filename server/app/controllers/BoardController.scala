@@ -21,19 +21,39 @@ class BoardController @Inject()
   
   def create(gameId: Int) = Action.async { implicit request =>
     withUser { user =>
-        
-      boardModel.createBoard(gameId, user.id) map { board =>
-        Ok(Json.toJson(board.id))
+      boardModel.createBoard(gameId, user.id) map { boardId =>
+        Ok(Json.toJson(boardId))
       }
     }
   }
 
   def game(boardId: String) = Action.async { implicit request =>
     withUser { user =>
-      
-      getOr404(boardModel.boardById(boardId)) { board =>
+      getOr404(boardModel.getBoard(boardId)) { board =>
         Future.successful(Ok(views.html.games.board(user, board.id)))
       }
+    }
+  }
+
+  def details(boardId: String) = Action.async { implicit request =>
+    withUser { user => 
+      getOr404(boardModel.getBoard(boardId)) { board =>
+        Future.successful(Ok(Json.toJson(board)))
+      }
+    }
+  }
+
+  def join(boardId: String) = Action.async { implicit request =>
+    withUser { user =>
+      boardModel.joinBoard(boardId, user.id)
+        .map(s => Ok(Json.toJson(s)))
+    }
+  }
+
+  def leave(boardId: String) = Action.async { implicit request =>
+    withUser { user =>
+      boardModel.leaveBoard(boardId, user.id)
+        .map(s => Ok(Json.toJson(s)))
     }
   }
 }

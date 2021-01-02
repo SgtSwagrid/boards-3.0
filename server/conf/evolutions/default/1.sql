@@ -2,24 +2,15 @@
 
 # --- !Ups
 
-CREATE TABLE States (
-  Id SERIAL PRIMARY KEY,
-  State BLOB
-);
-
 CREATE TABLE Boards (
   Id CHAR(5) PRIMARY KEY,
   GameId INT NOT NULL,
-  StateId BIGINT UNSIGNED,
   IsPublic BOOLEAN NOT NULL,
   Status INT UNSIGNED,
   RematchBoardId CHAR(5),
   ParentBoardId CHAR(5),
-  ParentStateId BIGINT UNSIGNED,
-  FOREIGN KEY StateFk (StateId) REFERENCES States(Id) ON DELETE RESTRICT,
   FOREIGN KEY RematchBoardFk (RematchBoardId) REFERENCES Boards(Id) ON DELETE SET NULL,
-  FOREIGN KEY ParentBoardFk (ParentBoardId) REFERENCES Boards(Id) ON DELETE SET NULL,
-  FOREIGN KEY ParentStateFk (ParentStateId) REFERENCES States(Id) ON DELETE SET NULL
+  FOREIGN KEY ParentBoardFk (ParentBoardId) REFERENCES Boards(Id) ON DELETE SET NULL
 );
 
 CREATE TABLE Users (
@@ -54,17 +45,25 @@ CREATE TABLE Players (
   TurnOrder INT NOT NULL,
   IsOwner BOOLEAN NOT NULL,
   Time INT NOT NULL,
-  ResignationOffered BOOLEAN NOT NULL,
-  DrawOffered BOOLEAN NOT NULL,
+  ResignOffer BOOLEAN NOT NULL,
+  DrawOffer BOOLEAN NOT NULL,
+  UndoOffer BOOLEAN NOT NULL,
   FOREIGN KEY UserFk (UserId) REFERENCES Users(Id) ON DELETE SET NULL,
   FOREIGN KEY BoardFk (BoardId) REFERENCES Boards(Id) ON DELETE CASCADE
 );
 
+CREATE TABLE Actions (
+  Id SERIAL PRIMARY KEY,
+  BoardId CHAR(5) NOT NULL,
+  Action INT NOT NULL,
+  ActionOrder INT NOT NULL
+);
+
 # --- !Downs
 
-DROP TABLE States;
 DROP TABLE Boards;
 DROP TABLE Users;
 DROP TABLE Friendships;
 DROP TABLE Invites;
 DROP TABLE Players;
+DROP TABLE Actions;

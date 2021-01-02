@@ -1,7 +1,5 @@
 package games.core
 
-import play.api.libs.json._
-
 import games.core.Coordinates._
 
 object Actions {

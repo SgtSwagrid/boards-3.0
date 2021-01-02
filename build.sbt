@@ -46,9 +46,9 @@ lazy val common = crossProject(JSPlatform, JVMPlatform)
   .crossType(CrossType.Pure)
   .in(file("common"))
   .settings(
-		name := "boards-common",
-		libraryDependencies ++= Seq(
-			"com.typesafe.play" %%% "play-json" % "2.9.1"
+    name := "boards-common",
+    libraryDependencies ++= Seq(
+      "com.typesafe.play" %%% "play-json" % "2.9.1"
     )
   )
 

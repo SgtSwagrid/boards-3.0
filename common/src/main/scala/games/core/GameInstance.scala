@@ -1,18 +1,34 @@
 package games.core
 
-import games.core.States._
-import games.core.Pieces._
-import games.core.Actions._
-import games.core.Coordinates._
+import play.api.libs.json._
 
-case class GameInstance (
-  id: String,
-  game: Game,
-  state: AnyState,
-  isPublic: Boolean,
-  status: Int,
-  players: List[Player],
-  rematchBoardId: String,
-  parentBoardId: String,
-  parentStateId: Int
-)
+object GameInstance {
+
+  case class Board (
+    id: String,
+    gameId: Int,
+    isPublic: Boolean,
+    status: Int,
+    players: Seq[Player],
+    actions: Seq[Int],
+    rematchBoardId: Option[String],
+    parentBoardId: Option[String]
+  ) {
+    def game = Manifest.Games(gameId)
+  }
+
+  case class Player (
+    id: Int,
+    userId: Option[Int],
+    username: String,
+    turnOrder: Int,
+    isOwner: Boolean,
+    time: Int,
+    resignOffer: Boolean = false,
+    drawOffer: Boolean = false,
+    undoOffer: Boolean = false
+  )
+
+  implicit val PlayerFormat = Json.format[Player]
+  implicit val BoardFormat = Json.format[Board]
+}

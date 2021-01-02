@@ -16,8 +16,9 @@ object PlayerSchema {
     turnOrder: Int,
     isOwner: Boolean = false,
     time: Int = 0,
-    resignationOffered: Boolean = false,
-    drawOffered: Boolean = false
+    resignOffer: Boolean = false,
+    drawOffer: Boolean = false,
+    undoOffer: Boolean = false
   )
 
   class Players(tag: Tag) extends Table[PlayerRow](tag, "Players") {
@@ -28,8 +29,9 @@ object PlayerSchema {
     val turnOrder = column[Int]("TurnOrder")
     val isOwner = column[Boolean]("IsOwner")
     val time = column[Int]("Time")
-    val resignationOffered = column[Boolean]("ResignationOffered")
-    val drawOffered = column[Boolean]("DrawOffered")
+    val resignOffer = column[Boolean]("ResignOffer")
+    val drawOffer = column[Boolean]("DrawOffer")
+    val undoOffer = column[Boolean]("UndoOffer")
 
     val userFk = (foreignKey("UserFk", userId, Users)
       (_.id.?, onDelete=ForeignKeyAction.SetNull))
@@ -38,8 +40,8 @@ object PlayerSchema {
       (_.id, onDelete=ForeignKeyAction.Cascade))
 
     override val * : ProvenShape[PlayerRow] = {
-      (id, userId, boardId, turnOrder, isOwner, time, resignationOffered,
-        drawOffered) <> (PlayerRow.tupled, PlayerRow.unapply)
+      (id, userId, boardId, turnOrder, isOwner, time, resignOffer,
+        drawOffer, undoOffer) <> (PlayerRow.tupled, PlayerRow.unapply)
     }
   }
 }
