@@ -2,28 +2,37 @@ package controllers
 
 import javax.inject._
 import scala.concurrent.{ExecutionContext, Future}
-import play.api.mvc.{AbstractController, ControllerComponents, Request, Result, AnyContent}
-import slick.jdbc.JdbcProfile
-import slick.jdbc.MySQLProfile.api._
+import play.api.mvc._, play.api.libs.streams.ActorFlow
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
-import play.api.libs.json._
-import models.schema.BoardSchema._
-import models.schema.UserSchema._
-import models.BoardModel
+import slick.jdbc.JdbcProfile, slick.jdbc.MySQLProfile.api._
+import akka.actor.{Actor, ActorRef, Props, ActorSystem}, akka.stream.Materializer
+import io.circe._, io.circe.generic.auto._, io.circe.parser._, io.circe.syntax._
+import models.{BoardModel, UserModel, Board, Player, User}
+import actors.{BoardActor, BoardManager}
 
 @Singleton
 class BoardController @Inject()
     (protected val dbConfigProvider: DatabaseConfigProvider, cc: ControllerComponents)
-    (protected implicit val ec: ExecutionContext) extends AbstractController(cc)
-    with HasDatabaseConfigProvider[JdbcProfile] with UserRequest with JsonRequest {
+    (implicit protected val ec: ExecutionContext, system: ActorSystem, mat: Materializer)
+    extends AbstractController(cc) with HasDatabaseConfigProvider[JdbcProfile]
+    with UserRequest {
 
   private val boardModel = new BoardModel(db)
+  private val userModel = new UserModel(db)
+
+  private val manager = system.actorOf(BoardManager.props(boardModel, userModel))
   
   def create(gameId: Int) = Action.async { implicit request =>
     withUser { user =>
-      boardModel.createBoard(gameId, user.id) map { boardId =>
-        Ok(Json.toJson(boardId))
+      boardModel.createBoard(gameId, user.id) map { board =>
+        Ok(board.asJson.toString)
       }
+    }
+  }
+
+  def socket(boardId: String) = WebSocket.accept[String, String] { request =>
+    ActorFlow.actorRef { out =>
+      BoardActor.props(out, manager, boardId)
     }
   }
 
@@ -38,7 +47,7 @@ class BoardController @Inject()
   def details(boardId: String) = Action.async { implicit request =>
     withUser { user => 
       getOr404(boardModel.getBoard(boardId)) { board =>
-        Future.successful(Ok(Json.toJson(board)))
+        Future.successful(Ok(board.asJson.toString))
       }
     }
   }
@@ -46,14 +55,14 @@ class BoardController @Inject()
   def join(boardId: String) = Action.async { implicit request =>
     withUser { user =>
       boardModel.joinBoard(boardId, user.id)
-        .map(s => Ok(Json.toJson(s)))
+        .map(s => Ok(s.asJson.toString))
     }
   }
 
   def leave(boardId: String) = Action.async { implicit request =>
     withUser { user =>
       boardModel.leaveBoard(boardId, user.id)
-        .map(s => Ok(Json.toJson(s)))
+        .map(s => Ok(""))
     }
   }
 }

@@ -7,6 +7,10 @@ import models.schema.UserSchema._
 import forms.UserForms._
 
 class UserModel(db: Database)(implicit ec: ExecutionContext) {
+
+  def getUser(userId: Int): Future[Option[User]] = {
+    db.run(userById(userId))
+  }
   
   def createUser(registration: Registration):
       Future[Either[InvalidUser, User]] = {
@@ -16,14 +20,14 @@ class UserModel(db: Database)(implicit ec: ExecutionContext) {
       case Left(error) => Future.successful(Left(error))
       case Right(RegisterForm(Username(username), Password(password))) => {
 
-        userByName(username) flatMap {
+       db.run(userByName(username)) flatMap {
 
           case Some(_) => Future.successful(Left(UsernameTaken))
           case None => {
 
             val hash = BCrypt.hashpw(password, BCrypt.gensalt())
             db.run(Users += User(-1, username, hash))
-              .flatMap(_ => userByName(username)
+              .flatMap(_ => db.run(userByName(username))
                 .map(user => Right(user.get)))
           }
         }
@@ -54,11 +58,11 @@ class UserModel(db: Database)(implicit ec: ExecutionContext) {
     }
   }
 
-  def userById(userId: Int): Future[Option[User]] = {
-    db.run(Users.filter(_.id === userId).result.headOption)
+  def userById(userId: Int) = {
+    Users.filter(_.id === userId).result.headOption
   }
 
-  def userByName(username: String): Future[Option[User]] = {
-    db.run(Users.filter(_.username === username).result.headOption)
+  def userByName(username: String) = {
+    Users.filter(_.username === username).result.headOption
   }
 }

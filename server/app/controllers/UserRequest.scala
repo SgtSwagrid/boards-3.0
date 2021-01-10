@@ -5,8 +5,7 @@ import javax.inject._
 import play.api.mvc.{AbstractController, Request, Result, AnyContent}
 import slick.jdbc.JdbcProfile
 import play.api.db.slick.HasDatabaseConfigProvider
-import models.schema.UserSchema._
-import models.UserModel
+import models.{User, UserModel}
 
 trait UserRequest {
     this: AbstractController with HasDatabaseConfigProvider[JdbcProfile] =>
@@ -18,7 +17,7 @@ trait UserRequest {
       (implicit request: Request[AnyContent]): Future[Result] = {
     
     request.session.get("userId") match {
-      case Some(userId) => userModel.userById(userId.toInt) flatMap {
+      case Some(userId) => userModel.getUser(userId.toInt) flatMap {
         case Some(user) => f(user)
         case None => Future.successful(
           Redirect(routes.UserController.login(request.path)))
@@ -32,7 +31,7 @@ trait UserRequest {
       (implicit request: Request[AnyContent]): Future[Result] = {
     
     request.session.get("userId") match {
-      case Some(userId) => userModel.userById(userId.toInt).flatMap(f)
+      case Some(userId) => userModel.getUser(userId.toInt).flatMap(f)
       case None => f(None)
     }
   }

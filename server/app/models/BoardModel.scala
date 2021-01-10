@@ -7,79 +7,44 @@ import models.schema.BoardSchema._
 import models.schema.PlayerSchema._
 import models.schema.ActionSchema._
 import models.schema.UserSchema._
-import games.core.GameInstance._
+import models.{Board, Player, User}
 import games.core.Manifest.Games
+import slick.dbio.DBIOAction
 
 class BoardModel(db: Database)(implicit ec: ExecutionContext) {
 
   private val userModel = new UserModel(db)
   
-  def createBoard(gameId: Int, userId: Int): Future[String] = {
+  def createBoard(gameId: Int, userId: Int): Future[Board] = {
 
     val boardId = randomId()
-    val board = BoardRow(id=boardId, gameId=gameId)
-    val player = PlayerRow(userId=Some(userId),
-      boardId=boardId, turnOrder=0, isOwner=true)
+    val board = Board(id=boardId, gameId=gameId)
+    val player = Player(userId=userId, boardId=boardId, turnOrder=0, isOwner=true)
 
     for {
       _ <- db.run(Boards += board) 
       _ <- db.run(Players += player)
-     } yield boardId
+      Some(board) <- db.run(boardById(boardId))
+    } yield board
   }
 
-  def getBoard(boardId: String): Future[Option[Board]] = {
+  def joinBoard(boardId: String, userId: Int): Future[Option[Player]] = {
 
-    db.run(for {
-      board <- boardById(boardId)
-      players <- playersWithUsers(boardId)
-      actions <- actionsByBoard(boardId)
+    db.run(boardWithPlayers(boardId)) flatMap {
 
-    } yield board map { board => Board (
-      board.id,
-      board.gameId,
-      board.isPublic,
-      board.status,
-      players map { case (player, user) => Player (
-        player.id,
-        player.userId,
-        user.username,
-        player.turnOrder,
-        player.isOwner,
-        player.time,
-        player.resignOffer,
-        player.drawOffer,
-        player.undoOffer
-      )},
-      actions map(_.action),
-      board.rematchBoardId,
-      board.parentBoardId
-    )})
-  }
+      case Some((board, players))
+        if canJoin(board, players, userId) => {
 
-  def joinBoard(boardId: String, userId: Int): Future[Boolean] = {
+        val player = Player(userId=userId,
+          boardId=boardId, turnOrder=players.size)
 
-    for {
-      // Get the board, and list of current players.
-      board <- db.run(boardById(boardId))
-      players <- db.run(playersByBoard(boardId))
-      
-      result <- board
-      
-      // Ensure the game isn't already full.
-        .filter(board => players.size < Games(board.gameId).players.max)
-
-      // Ensure the user isn't already in this game.
-        .filter(_ => !players.exists(_.userId == Some(userId)))
-
-      // Ensure the game hasn't already started.
-        .filter(_.status > 0)
-
-      // Add the player to the game.
-        .map(_ => db.run(Players +=
-          PlayerRow(-1, Some(userId), boardId, players.size))
-        .map(_ > 0)) getOrElse(Future.successful(false))
-
-    } yield result
+        for {
+          _ <- db.run(Players += player)
+          player <- db.run(playerByUser(boardId, userId))
+        } yield player
+      }
+      case _ => Future.successful(None)
+    }
   }
 
   def leaveBoard(boardId: String, userId: Int): Future[Boolean] = {
@@ -89,8 +54,8 @@ class BoardModel(db: Database)(implicit ec: ExecutionContext) {
       player <- db.run(playerByUser(boardId, userId))
       playerId <- Future.successful(player map(_.id) getOrElse(-1))
 
-      //Leave the game.
-      result <- db.run(Players.filter(_.id === playerId).delete) map(_ > 0)
+      // Leave the game.
+      result <- db.run(Players.filter(_.id === playerId).delete).map(_ > 0)
 
       // Get the remaining players.
       players <- db.run(playersByBoard(boardId))
@@ -108,8 +73,12 @@ class BoardModel(db: Database)(implicit ec: ExecutionContext) {
     } yield result
   }
 
+  def getBoard(boardId: String): Future[Option[Board]] = {
+    db.run(boardById(boardId))
+  }
+
   def boardExists(boardId: String): Future[Boolean] = {
-    db.run(boardById(boardId)) map(_.isDefined)
+    getBoard(boardId).map(_.isDefined)
   }
 
   def takeAction(boardId: String, action: Int): Future[Unit] = {
@@ -120,6 +89,20 @@ class BoardModel(db: Database)(implicit ec: ExecutionContext) {
     } yield ())
   }
 
+  def getPlayer(playerId: Int): Future[Option[Player]] = {
+    db.run(playerById(playerId))
+  }
+
+  def getPlayers(boardId: String): Future[Seq[Player]] = {
+    db.run(playersByBoard(boardId))
+  }
+
+  def getParticipants(boardId: String): Future[Seq[Participant]] = {
+    db.run((Players.filter(_.boardId === boardId)
+      join Users on (_.userId === _.id)).result)
+      .map { _.map { case (player, user) => Participant(player, user) }}
+  }
+
   private def boardById(boardId: String) = {
     Boards.filter(_.id === boardId).result.headOption
   }
@@ -128,16 +111,29 @@ class BoardModel(db: Database)(implicit ec: ExecutionContext) {
     Players.filter(_.boardId === boardId).result
   }
 
-  private def boardWithPlayers(boardId: String) = {
-    db.run(for {
+  private def boardWithPlayers(boardId: String): DBIO[Option[(Board, Seq[Player])]] = {
+    for {
       board <- boardById(boardId)
       players <- playersByBoard(boardId)
-    } yield board.map((_, players)))
+    } yield board.map((_, players))
   }
 
   private def playersWithUsers(boardId: String) = {
     val players = Players.filter(_.boardId === boardId)
     (players join Users on (_.userId === _.id)).result
+  }
+
+  private def playerById(playerId: Int) = {
+    Players.filter(_.id === playerId).result.headOption
+  }
+
+  private def playerWithUser(playerId: Int) = {
+    playerById(playerId) flatMap {
+      case Some(player) =>
+        userModel.userById(player.userId)
+          .map { _ map { user => Some((player, user)) }}
+      case None => DBIOAction.successful(None)
+    }
   }
 
   private def actionsByBoard(boardId: String) = {
@@ -151,7 +147,14 @@ class BoardModel(db: Database)(implicit ec: ExecutionContext) {
       .result.headOption
   }
 
-  private def randomId() =
+  private def randomId() = {
     (random() * (1 << 20)).toInt.toHexString
       .toUpperCase.padTo(5, "0").reverse.toString
+  }
+
+  private def canJoin(board: Board, players: Seq[Player], userId: Int) = {
+    players.size < Games(board.gameId).players.max &&
+      !players.exists(_.userId == userId) &&
+      board.status == 0
+  }
 }

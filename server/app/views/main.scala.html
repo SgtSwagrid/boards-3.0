@@ -1,4 +1,5 @@
-@import models.schema.UserSchema._
+@import models.User
+@import io.circe._, io.circe.generic.auto._, io.circe.parser._, io.circe.syntax._
 
 @(title: String, user: Option[User] = None)(content: Html)(implicit request: RequestHeader)
 
@@ -22,7 +23,7 @@
       name => getClass.getResource(s"/public/$name") != null)
   </head>
   <body class="grey darken-1"> <!-- background='@routes.Assets.versioned("img/tweed.png")' -->
-    <input type="hidden" id="userId" value="@user.map(_.id).getOrElse(-1)"></input>
+    <input type="hidden" id="user" value="@user.asJson"></input>
     <nav>
       <div class="nav-wrapper grey darken-4">
         <a href="/" class="brand-logo">Boards</a>

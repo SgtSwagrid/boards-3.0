@@ -3,6 +3,7 @@ GET  /games/browse           controllers.MenuController.browse
 GET  /games/create           controllers.MenuController.create
 
 POST /games/create/:gameId   controllers.BoardController.create(gameId: Int)
+GET  /games/socket/:boardId  controllers.BoardController.socket(boardId: String)
 GET  /games/board/:boardId   controllers.BoardController.game(boardId: String)
 GET  /games/details/:boardId controllers.BoardController.details(boardId: String)
 POST /games/join/:boardId    controllers.BoardController.join(boardId: String)

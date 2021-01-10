@@ -2,12 +2,11 @@ package models.schema
 
 import slick.jdbc.MySQLProfile.api._
 import slick.lifted.ProvenShape
+import models.User
 
 object UserSchema {
   
   lazy val Users = TableQuery[Users]
-
-  case class User(id: Int, username: String, password: String)
 
   class Users(tag: Tag) extends Table[User](tag, "Users") {
 
@@ -16,7 +15,7 @@ object UserSchema {
     val password = column[String]("Password")
 
     override def * : ProvenShape[User] = {
-      (id, username, password) <> (User.tupled, User.unapply)
+      (id, username, password) <> ((User.apply _).tupled, User.unapply)
     }
   }
 }

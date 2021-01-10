@@ -9,7 +9,8 @@ import slinky.core.facade.ReactElement
 import slinky.core.annotations.react
 import slinky.web.ReactDOM
 import slinky.web.html._
-import games.core._
+import io.circe._, io.circe.generic.auto._, io.circe.parser._, io.circe.syntax._
+import models.Board, games.core._
 import components.PaginationComponent
 
 object CreateView {
@@ -78,8 +79,8 @@ object CreateView {
 
     private def create(game: Game) = {
 
-      FetchJson.post(createRoute + game.id) { boardId: String =>
-        window.location.href = gameRoute + boardId
+      FetchJson.post(createRoute + game.id) { board: Board =>
+        window.location.href = gameRoute + board.id
       }
     }
   }

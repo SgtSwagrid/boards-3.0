@@ -2,21 +2,13 @@ package models.schema
 
 import slick.jdbc.MySQLProfile.api._
 import slick.lifted.ProvenShape
+import models.Board
 
 object BoardSchema {
   
   lazy val Boards = TableQuery[Boards]
 
-  case class BoardRow (
-    id: String,
-    gameId: Int,
-    isPublic: Boolean = true,
-    status: Int = 0,
-    rematchBoardId: Option[String] = None,
-    parentBoardId: Option[String] = None
-  )
-
-  class Boards(tag: Tag) extends Table[BoardRow](tag, "Boards") {
+  class Boards(tag: Tag) extends Table[Board](tag, "Boards") {
 
     val id = column[String]("Id", O.PrimaryKey)
     val gameId = column[Int]("GameId")
@@ -37,9 +29,9 @@ object BoardSchema {
     val parentStateFk = (foreignKey("ParentStateFk", parentStateId, States)
       (_.id.?, onDelete=ForeignKeyAction.SetNull))*/
 
-    override def * : ProvenShape[BoardRow] = {
+    override def * : ProvenShape[Board] = {
       (id, gameId, isPublic, status, rematchBoardId, parentBoardId) <>
-        (BoardRow.tupled, BoardRow.unapply)
+        ((Board.apply _).tupled, Board.unapply)
     }
   }
 }
