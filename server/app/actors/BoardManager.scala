@@ -15,6 +15,7 @@ class BoardManager(boardModel: BoardModel, userModel: UserModel)
 
     case (actor: ActorRef, NewSpectator(boardId, _)) => {
       actors += boardId -> (actor +: actors.get(boardId).getOrElse(Nil))
+      boardModel.getBoard(boardId).foreach(actor ! SetBoard(_))
       boardModel.getParticipants(boardId).map(actor ! SetPlayers(_))
     }
 
@@ -24,11 +25,35 @@ class BoardManager(boardModel: BoardModel, userModel: UserModel)
         participants <- boardModel.getParticipants(boardId)
       } broadcast(boardId, SetPlayers(participants))
     
-    case (actor: ActorRef, LeaveGame(boardId, userId, _)) => 
+    case (actor: ActorRef, RemovePlayer(boardId, playerId, _)) => 
       for {
-        _ <- boardModel.leaveBoard(boardId, userId)
+        _ <- boardModel.removePlayer(boardId, playerId)
         participants <- boardModel.getParticipants(boardId)
       } broadcast(boardId, SetPlayers(participants))
+
+    case (actor: ActorRef, PromotePlayer(boardId, playerId, _)) =>
+      for {
+        promoted <- boardModel.promotePlayer(boardId, playerId)
+        participants <- boardModel.getParticipants(boardId)
+      } if (promoted) broadcast(boardId, SetPlayers(participants))
+
+    case (actor: ActorRef, DemotePlayer(boardId, playerId, _)) =>
+      for {
+        demoted <- boardModel.demotePlayer(boardId, playerId)
+        participants <- boardModel.getParticipants(boardId)
+      } if (demoted) broadcast(boardId, SetPlayers(participants))
+    
+    case (actor: ActorRef, DeleteGame(boardId, _)) => {
+      boardModel.deleteBoard(boardId)
+      broadcast(boardId, SetBoard(None))
+    }
+
+    case (actor: ActorRef, StartGame(boardId, _)) => {
+      for {
+        started <- boardModel.startGame(boardId)
+        board <- boardModel.getBoard(boardId)
+      } if (started) broadcast(boardId, SetBoard(board))
+    }
   }
 
   private def broadcast(boardId: String, res: BoardResponse) = {

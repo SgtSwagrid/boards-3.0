@@ -47,12 +47,11 @@ class BoardModel(db: Database)(implicit ec: ExecutionContext) {
     }
   }
 
-  def leaveBoard(boardId: String, userId: Int): Future[Boolean] = {
+  def removePlayer(boardId: String, playerId: Int): Future[Boolean] = {
 
     for {
       // Find the player associated with this user.
-      player <- db.run(playerByUser(boardId, userId))
-      playerId <- Future.successful(player map(_.id) getOrElse(-1))
+      player <- db.run(playerById(playerId) map(_.get))
 
       // Leave the game.
       result <- db.run(Players.filter(_.id === playerId).delete).map(_ > 0)
@@ -60,17 +59,49 @@ class BoardModel(db: Database)(implicit ec: ExecutionContext) {
       // Get the remaining players.
       players <- db.run(playersByBoard(boardId))
 
+      // Move each subsequent player up by one position.
+      _ <- db.run(DBIOAction.sequence(players
+        .filter(_.turnOrder > player.turnOrder)
+        .map(player => Players.filter(_.id === player.id)
+          .map(_.turnOrder).update(player.turnOrder-1))))
+
       // Delete the board if all players leave.
       _ <- if (players.size == 0)
           db.run(Boards.filter(_.id === boardId).delete)
 
       // Promote another player if the owner leaves.
-        else if (player.map(_.isOwner).getOrElse(false))
+        else if (player.isOwner)
           db.run(Players.filter(_.id === players.head.id)
             .map(_.isOwner).update(true))
 
         else Future.unit
     } yield result
+  }
+
+  def promotePlayer(boardId: String, playerId: Int): Future[Boolean] = {
+
+    db.run(for {
+      player <- playerById(playerId)
+      previous <- playerByPosition(boardId,
+        player.map(_.turnOrder-1).getOrElse(-1))
+
+      swapped <- (player zip previous) map {
+        case (player, previous) => swap(player, previous) map(_ => true)
+      } getOrElse(DBIO.successful(false))
+    } yield swapped)
+  }
+
+  def demotePlayer(boardId: String, playerId: Int): Future[Boolean] = {
+
+    db.run(for {
+      player <- playerById(playerId)
+      next <- playerByPosition(boardId,
+        player.map(_.turnOrder+1).getOrElse(-1))
+
+      swapped <- (player zip next) map {
+        case (player, next) => swap(player, next) map(_ => true)
+      } getOrElse(DBIO.successful(false))
+    } yield swapped)
   }
 
   def getBoard(boardId: String): Future[Option[Board]] = {
@@ -98,9 +129,19 @@ class BoardModel(db: Database)(implicit ec: ExecutionContext) {
   }
 
   def getParticipants(boardId: String): Future[Seq[Participant]] = {
-    db.run((Players.filter(_.boardId === boardId)
+    db.run((Players.filter(_.boardId === boardId).sortBy(_.turnOrder)
       join Users on (_.userId === _.id)).result)
-      .map { _.map { case (player, user) => Participant(player, user) }}
+      .map(_.map { case (player, user) => Participant(player, user) })
+      .map(_.sortBy(_.player.turnOrder))
+  }
+
+  def startGame(boardId: String): Future[Boolean] = {
+    db.run(Boards.filter(_.id === boardId).filter(_.status === 0)
+      .map(_.status).update(1)) map(_ > 0)
+  }
+
+  def deleteBoard(boardId: String): Future[Boolean] = {
+    db.run(Boards.filter(_.id === boardId).delete) map(_ > 0)
   }
 
   private def boardById(boardId: String) = {
@@ -108,7 +149,12 @@ class BoardModel(db: Database)(implicit ec: ExecutionContext) {
   }
 
   private def playersByBoard(boardId: String) = {
-    Players.filter(_.boardId === boardId).result
+    Players.filter(_.boardId === boardId).sortBy(_.turnOrder).result
+  }
+
+  private def playerByPosition(boardId: String, position: Int) = {
+    Players.filter(_.boardId === boardId)
+      .filter(_.turnOrder === position).result.headOption
   }
 
   private def boardWithPlayers(boardId: String): DBIO[Option[(Board, Seq[Player])]] = {
@@ -134,6 +180,15 @@ class BoardModel(db: Database)(implicit ec: ExecutionContext) {
           .map { _ map { user => Some((player, user)) }}
       case None => DBIOAction.successful(None)
     }
+  }
+
+  private def swap(player1: Player, player2: Player) = {
+    for {
+      _ <- Players.filter(_.id === player1.id)
+        .map(_.turnOrder).update(player2.turnOrder)
+      _ <- Players.filter(_.id === player2.id)
+        .map(_.turnOrder).update(player1.turnOrder)
+    } yield ()
   }
 
   private def actionsByBoard(boardId: String) = {

@@ -43,26 +43,4 @@ class BoardController @Inject()
       }
     }
   }
-
-  def details(boardId: String) = Action.async { implicit request =>
-    withUser { user => 
-      getOr404(boardModel.getBoard(boardId)) { board =>
-        Future.successful(Ok(board.asJson.toString))
-      }
-    }
-  }
-
-  def join(boardId: String) = Action.async { implicit request =>
-    withUser { user =>
-      boardModel.joinBoard(boardId, user.id)
-        .map(s => Ok(s.asJson.toString))
-    }
-  }
-
-  def leave(boardId: String) = Action.async { implicit request =>
-    withUser { user =>
-      boardModel.leaveBoard(boardId, user.id)
-        .map(s => Ok(""))
-    }
-  }
 }

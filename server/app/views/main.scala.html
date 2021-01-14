@@ -29,26 +29,26 @@
         <a href="/" class="brand-logo">Boards</a>
         <ul id="nav-mobile" class="right hide-on-med-and-down">
           <li><a href="/games/create">
-            <img class="icon" src='@routes.Assets.versioned("img/play.svg")'>
-            <p class="white-text icon-text">New Game</p>
+            <img class="small-icon" src='@routes.Assets.versioned("img/play.svg")'>
+            <span class="white-text">New Game</span>
           </a></li>
           <li><a href="/games/browse">
-            <img class="icon" src='@routes.Assets.versioned("img/magnifying-glass.svg")'>
-            <p class="white-text icon-text">Browse Games</p>
+            <img class="small-icon" src='@routes.Assets.versioned("img/menu.svg")'>
+            <span class="white-text">Browse Games</span>
           </a></li>
           @if(user.isDefined) {
             <li><a href="/users/profile">
-              <img class="icon" src='@routes.Assets.versioned("img/profile.svg")'>
-              <p class="white-text icon-text">Profile</p>
+              <img class="small-icon" src='@routes.Assets.versioned("img/user.svg")'>
+              <span class="white-text">Profile</span>
             </a></li>
             <li><a href="/users/logout">
-              <img class="icon" src='@routes.Assets.versioned("img/logout.svg")'>
-              <p class="white-text icon-text">Logout @user.get.username</p>
+              <img class="small-icon" src='@routes.Assets.versioned("img/logout.svg")'>
+              <span class="white-text">Logout @user.get.username</span>
             </a></li>
           } else {
             <li><a href="/users/login">
-              <img class="icon" src='@routes.Assets.versioned("img/login.svg")'>
-              <p class="white-text icon-text">Login/Register</p>
+              <img class="small-icon" src='@routes.Assets.versioned("img/join.svg")'>
+              <span class="white-text">Login/Register</span>
             </a></li>
           }
         </ul>
@@ -60,24 +60,20 @@
       <div class="page-footer grey darken-4">
         <div class="container">
           <div class="row">
-            <div class="col l6 s12">
-              <h5 class="white-text">NAVIGATION</h5>
-              <p class="grey-text text-lighten-4">Hello my name is Alec and I am cool. Hello my name is Alec and I am cool. Hello my name is Alec and I am cool.</p>
-            </div>
-            <div class="col l2 offset-l4 s12">
+            <div class="col l2 s12">
               <a href="https://github.com/SgtSwagrid/boards">
-                <img class="icon" src='@routes.Assets.versioned("img/github.svg")'>
-                <p class="white-text icon-text">GitHub</p>
+                <img class="small-icon" src='@routes.Assets.versioned("img/github.svg")'>
+                <span class="white-text">GitHub</span>
               </a>
               <br>
               <a href="https://discord.gg/EWsnD2QhBW">
-                <img class="icon" src='@routes.Assets.versioned("img/discord.svg")'>
-                <p class="white-text icon-text">Discord</p>
+                <img class="small-icon" src='@routes.Assets.versioned("img/discord.svg")'>
+                <span class="white-text">Discord</span>
               </a>
               <br>
               <a href="https://www.youtube.com/channel/UC7DY6cKGEwpEtS8bBza03yA">
-                <img class="icon" src='@routes.Assets.versioned("img/youtube.svg")'>
-                <p class="white-text icon-text">YouTube</p>
+                <img class="small-icon" src='@routes.Assets.versioned("img/youtube.svg")'>
+                <span class="white-text">YouTube</span>
               </a>
             </div>
           </div>

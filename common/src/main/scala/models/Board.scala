@@ -11,4 +11,7 @@ case class Board (
   parentBoardId: Option[String] = None
 ) {
   def game = Manifest.Games(gameId)
+  def setup = status == 0
+  def ongoing = status == 1
+  def ended = status == 2
 }
