@@ -11,7 +11,7 @@ import slinky.web.ReactDOM
 import slinky.web.html._
 import io.circe._, io.circe.generic.auto._, io.circe.parser._, io.circe.syntax._
 import models.Board, games.core._
-import views.components.menu.LocalMenuComponent
+import views.components.menu.{LocalMenuComponent, MenuItem}
 import views.FetchJson
 
 object CreateView {
@@ -23,16 +23,16 @@ object CreateView {
   def create() = {
 
     ReactDOM.render (
-      CreateMenu,
+
+      LocalMenuComponent (
+        Manifest.Games map { game => MenuItem (
+          GameComponent(game), List(game.name)
+        )}
+      ),
+      
       document.getElementById("root")
     )
   }
-
-  val CreateMenu = LocalMenuComponent (
-    Manifest.Games,
-    { case game: Game => Seq(game.name) },
-    { case game: Game => GameComponent(game) }
-  )
 
   @react class GameComponent extends StatelessComponent {
 
