@@ -1,4 +1,4 @@
-package views
+package views.components
 
 import org.scalajs.dom._, org.scalajs.dom.html
 import scala.scalajs.js.annotation.JSExportTopLevel

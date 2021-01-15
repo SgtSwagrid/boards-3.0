@@ -1,4 +1,4 @@
-package views
+package views.components
 
 import scala.scalajs.js.annotation.JSExportTopLevel
 import slinky.core.Component

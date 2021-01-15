@@ -1,4 +1,4 @@
-package views
+package views.components
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import org.scalajs.dom.{document, html, window}
@@ -11,7 +11,8 @@ import slinky.web.ReactDOM
 import slinky.web.html._
 import io.circe._, io.circe.generic.auto._, io.circe.parser._, io.circe.syntax._
 import models.Board, games.core._
-import components.PaginationComponent
+import views.components.menu.LocalMenuComponent
+import views.FetchJson
 
 object CreateView {
 
@@ -22,47 +23,16 @@ object CreateView {
   def create() = {
 
     ReactDOM.render (
-      MenuComponent(),
+      CreateMenu,
       document.getElementById("root")
     )
   }
 
-  @react class MenuComponent extends Component {
-
-    type Props = Unit
-    case class State(games: List[Game], page: Int)
-    def initialState = State(Manifest.Games, 0)
-
-    final val pageSize = 6
-
-    def render() = div (
-      div(className := "input-field") (
-        input(className := "white-text", id := "search", `type` := "text", autoFocus,
-          onChange := (e => search(e.target.value))
-        ),
-        label(className := "white-text", htmlFor := "search") ("Search games")
-      ),
-      state.games.drop(state.page * pageSize).take(pageSize).map { game =>
-        div(key := game.name) (GameComponent(game))
-      },
-      PaginationComponent(state.page, pages, goto _)
-    )
-    
-    private def search(string: String) = {
-
-      val games = Manifest.Games.filter {
-        _.name.toLowerCase.contains(string.toLowerCase)
-      }
-      val page = state.page min (games.size-1)
-      setState(state.copy(games = games, page = 0))
-    }
-
-    private def goto(page: Int) =
-      setState(state.copy(page = 0 max ((pages-1) min page)))
-      
-    private def pages =
-      (((state.games.size - 1) / pageSize) + 1) max 1
-  }
+  val CreateMenu = LocalMenuComponent (
+    Manifest.Games,
+    { case game: Game => Seq(game.name) },
+    { case game: Game => GameComponent(game) }
+  )
 
   @react class GameComponent extends StatelessComponent {
 
@@ -77,11 +47,9 @@ object CreateView {
       )
     )
 
-    private def create(game: Game) = {
-
+    private def create(game: Game) =
       FetchJson.post(createRoute + game.id) { board: Board =>
         window.location.href = gameRoute + board.id
       }
-    }
   }
 }
