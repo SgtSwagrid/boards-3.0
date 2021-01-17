@@ -9,13 +9,13 @@ import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import models.schema.UserSchema._
 import models.UserModel
 import forms.UserForms._
-import cats.implicits
+import controllers.helpers.UserHelper
 
 @Singleton
 class UserController @Inject()
     (protected val dbConfigProvider: DatabaseConfigProvider, cc: ControllerComponents)
     (protected implicit val ec: ExecutionContext) extends AbstractController(cc)
-    with HasDatabaseConfigProvider[JdbcProfile] with UserRequest {
+    with HasDatabaseConfigProvider[JdbcProfile] with UserHelper {
   
   private val userModel = new UserModel(db)
 

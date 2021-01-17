@@ -44,7 +44,9 @@ lazy val client = (project in file("client"))
       "io.circe"          %%% "circe-core"      % "0.13.0",
       "io.circe"          %%% "circe-generic"   % "0.13.0",
       "io.circe"          %%% "circe-parser"    % "0.13.0",
+      "io.github.cquiroz" %%% "scala-java-time" % "2.1.0",
       "com.vmunier"       %%  "scalajs-scripts" % "1.1.4"
+      
     )
   )
   .enablePlugins(ScalaJSPlugin, ScalaJSWeb)
@@ -56,9 +58,10 @@ lazy val common = crossProject(JSPlatform, JVMPlatform)
   .settings(
     name := "boards-common",
     libraryDependencies ++= Seq(
-      "io.circe" %%% "circe-core"    % "0.13.0",
-      "io.circe" %%% "circe-generic" % "0.13.0",
-      "io.circe" %%% "circe-parser"  % "0.13.0",
+      "io.circe"          %%% "circe-core"      % "0.13.0",
+      "io.circe"          %%% "circe-generic"   % "0.13.0",
+      "io.circe"          %%% "circe-parser"    % "0.13.0",
+      "io.github.cquiroz" %%% "scala-java-time" % "2.1.0"
       //"com.typesafe.play" %%% "play-json" % "2.9.1"
       //"org.json4s" %% "json4s-native" % "3.6.10"
     )

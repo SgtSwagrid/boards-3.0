@@ -1,5 +1,6 @@
 package models.schema
 
+//import java.time.LocalDateTime
 import slick.jdbc.MySQLProfile.api._
 import slick.lifted.ProvenShape
 import models.Board
@@ -16,22 +17,17 @@ object BoardSchema {
     val status = column[Int]("Status")
     val rematchBoardId = column[Option[String]]("RematchBoardId")
     val parentBoardId = column[Option[String]]("ParentBoardId")
+    val modified = column[String]("Modified")
 
-    /*val stateFk = (foreignKey("StateFk", stateId, States)
-      (_.id.?, onDelete=ForeignKeyAction.Restrict))
-
-    val rematchBoardFk = (foreignKey("RematchBoardFk", rematchBoardId, Boards)
+    /*val rematchBoardFk = (foreignKey("RematchBoardFk", rematchBoardId, Boards)
       (_.id.?, onDelete=ForeignKeyAction.SetNull))
 
     val parentBoardFk = (foreignKey("ParentBoardFk", parentBoardId, Boards)
-      (_.id.?, onDelete=ForeignKeyAction.SetNull))
-
-    val parentStateFk = (foreignKey("ParentStateFk", parentStateId, States)
       (_.id.?, onDelete=ForeignKeyAction.SetNull))*/
 
     override def * : ProvenShape[Board] = {
-      (id, gameId, isPublic, status, rematchBoardId, parentBoardId) <>
-        ((Board.apply _).tupled, Board.unapply)
+      (id, gameId, isPublic, status, rematchBoardId, parentBoardId, modified) <>
+        (Board.tupled, Board.unapply)
     }
   }
 }
