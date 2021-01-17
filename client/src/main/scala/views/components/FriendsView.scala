@@ -8,7 +8,7 @@ import slinky.core.facade.ReactElement
 import slinky.core.annotations.react
 import slinky.web.ReactDOM, slinky.web.html._
 import models.User, games.core._
-import views.components.PaginationComponent
+import views.components.menu.PaginationComponent
 import views.components.ButtonComponent
 
 
