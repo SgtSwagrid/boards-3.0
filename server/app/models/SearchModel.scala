@@ -19,7 +19,7 @@ class SearchModel(db: Database)(implicit ec: ExecutionContext) {
 
     db.run(visible zip pages) map {
       case (visible, pages) =>
-        SearchResponse(visible, query.page, pages)
+        SearchResponse(visible, query.page, pages max 1)
     }
   }
 }

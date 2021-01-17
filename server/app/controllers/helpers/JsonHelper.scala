@@ -10,7 +10,7 @@ trait JsonHelper { this: AbstractController =>
   protected def withJson[A](f: A => Future[Result])
       (implicit request: Request[AnyContent], decoder: Decoder[A]): Future[Result] = {
     
-    decode[A](request.body.asFormUrlEncoded.get("json")(0)) match {
+    decode[A](request.body.asJson.get.toString) match {
       case Right(a) => f(a)
       case Left(_) => Future.successful(NotFound)
     }

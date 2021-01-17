@@ -15,7 +15,7 @@ import views.components.menu.PaginationComponent
 
 object BrowseView {
 
-  private val queryRoute = "/games/browse/query/"
+  private val queryRoute = "/games/browse/query"
   private val gameRoute  = "/games/board/"
 
   @JSExportTopLevel("browse")
@@ -31,40 +31,40 @@ object BrowseView {
 
     type Props = Unit
     case class State(tab: Int)
-    val initialState = State(0)
+    def initialState = State(0)
 
-    def render() = { println(state); div(className := "container") (
+    def render() = div(className := "container") (
       TabsComponent(Seq (
         ("All Boards",      "/assets/img/earth-grid.svg"),
         ("Friend's Boards", "/assets/img/followers.svg"),
         ("My Boards",       "/assets/img/user.svg")
       )),
       BoardListComponent()
-    )}
+    )
   }
 
   @react class BoardListComponent extends Component {
 
     type Props = Unit
-    case class State(result: Int)
-    val initialState = State(5)
+    case class State(result: Option[SearchResponse[Board]])
+    def initialState = State(None)
 
-    def render() = { println(state); div() }
-      //state.result map { result => div (
-        //result.items map { board =>
-        //  GameComponent(board)
-        //},
-        //PaginationComponent(result.page, result.pages, query _)
-      //)}
+    def render() =
+      state.result map { result => div (
+        result.items map { board =>
+          GameComponent(board)
+        },
+        PaginationComponent(result.page, result.pages, query _)
+      )}
 
-    //override def componentDidMount() = println(state)//query(0)
+    override def componentDidMount() = query(0)
 
-    /*private def query(page: Int) =
+    private def query(page: Int) =
 
       FetchJson.postJson(queryRoute, SearchQuery(page)) {
         result: SearchResponse[Board] =>{println(result)
           setState(state.copy(result = Some(result)))
-      }}*/
+      }}
   }
 
   @react class GameComponent extends StatelessComponent {
@@ -77,7 +77,7 @@ object BrowseView {
     ) (
       div(className := "menu-item-body") (
         span(className := "white-text medium-text") (props.board.game.name),
-        span(className := "grey-text small-text") (s"#${props.board.game.name}")
+        span(className := "grey-text small-text") (s" #${props.board.id}")
       )
     )
 
