@@ -1,4 +1,4 @@
-package components
+package views.components
 
 import slinky.core.StatelessComponent
 import slinky.web.html._

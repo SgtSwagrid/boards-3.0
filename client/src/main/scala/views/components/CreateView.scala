@@ -1,4 +1,4 @@
-package views
+package views.components
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import org.scalajs.dom.{document, html, window}
@@ -11,7 +11,8 @@ import slinky.web.ReactDOM
 import slinky.web.html._
 import io.circe._, io.circe.generic.auto._, io.circe.parser._, io.circe.syntax._
 import models.Board, games.core._
-import components.PaginationComponent
+import views.components.PaginationComponent
+import views.FetchJson
 
 object CreateView {
 
@@ -45,7 +46,7 @@ object CreateView {
       state.games.drop(state.page * pageSize).take(pageSize).map { game =>
         div(key := game.name) (GameComponent(game))
       },
-      PaginationComponent(state.page, pages, goto _)
+      PaginationComponent(state.page, pages, goto _ )
     )
     
     private def search(string: String) = {

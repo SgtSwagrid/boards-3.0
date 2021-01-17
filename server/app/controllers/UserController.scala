@@ -9,6 +9,7 @@ import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import models.schema.UserSchema._
 import models.UserModel
 import forms.UserForms._
+import cats.implicits
 
 @Singleton
 class UserController @Inject()
@@ -26,8 +27,7 @@ class UserController @Inject()
           _.map(user => Redirect(next)
             .withSession(
               "userId" -> user.id.toString,
-              "csrfToken" -> play.filters.csrf.CSRF
-                .getToken.map(_.value).getOrElse("")))
+              "csrfToken" -> play.filters.csrf.CSRF.getToken.map(_.value).getOrElse("")))
           .left.map(error => Redirect(routes.UserController.login())
             .flashing(showError(error))).merge
         }
@@ -59,6 +59,12 @@ class UserController @Inject()
   def userProfile() = Action.async { implicit request =>
     withUser { user =>
       Future.successful(Ok(views.html.users.profile(user)))
+    }
+  }
+
+  def userFriends() = Action.async { implicit request =>
+    withUser { user =>
+      Future.successful(Ok(views.html.users.friends(user)))
     }
   }
 

@@ -16,6 +16,7 @@ object FriendshipSchema {
     val id = column[Int]("Id", O.PrimaryKey, O.AutoInc)
     val user1Id = column[Int]("User1Id")
     val user2Id = column[Int]("User2Id")
+    val status = column[Int]("Status")
     val date = column[LocalDateTime]("Date")
 
     val user1Fk = (foreignKey("User1Fk", user1Id, Users)

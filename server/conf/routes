@@ -12,6 +12,7 @@ GET  /users/register         controllers.UserController.register(next: String ?=
 POST /users/register         controllers.UserController.register(next: String ?= "/")
 GET  /users/logout           controllers.UserController.logout(next: String ?= "/")
 GET  /users/profile          controllers.UserController.userProfile
+GET  /users/profile/friends  controllers.UserController.userFriends
 
 GET  /assets/*file           controllers.Assets.at(file)
 GET  /versionedAssets/*file  controllers.Assets.versioned(path="/public", file: Asset)
