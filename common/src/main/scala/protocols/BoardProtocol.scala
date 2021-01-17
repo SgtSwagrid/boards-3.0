@@ -1,10 +1,10 @@
-package requests
+package protocols
 
 import cats.syntax.functor._
 import io.circe._, io.circe.generic.auto._, io.circe.parser._, io.circe.syntax._
 import models.{Board, Player, User, Participant}
 
-object BoardRequests {
+object BoardProtocol {
   
   trait BoardRequest
   

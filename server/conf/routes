@@ -1,5 +1,6 @@
 GET  /                       controllers.MenuController.index
 GET  /games/browse           controllers.MenuController.browse
+POST /games/browse/query     controllers.MenuController.browseQuery
 GET  /games/create           controllers.MenuController.create
 
 POST /games/create/:gameId   controllers.BoardController.create(gameId: Int)

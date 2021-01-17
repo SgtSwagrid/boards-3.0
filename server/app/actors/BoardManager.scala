@@ -4,7 +4,7 @@ import scala.concurrent.ExecutionContext
 import scala.collection.mutable
 import akka.actor.{Actor, ActorRef, Props}
 import models.{BoardModel, UserModel, Participant}
-import requests.BoardRequests._
+import protocols.BoardProtocol._
 
 class BoardManager(boardModel: BoardModel, userModel: UserModel)
     (implicit ec: ExecutionContext) extends Actor {

@@ -1,4 +1,4 @@
-package views.components
+package views
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import org.scalajs.dom.{document, html, window}

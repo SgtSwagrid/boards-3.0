@@ -1,4 +1,4 @@
-package views.components
+package views
 
 import org.scalajs.dom._, org.scalajs.dom.html
 import scala.scalajs.js.annotation.JSExportTopLevel
@@ -7,7 +7,8 @@ import slinky.core.{Component, StatelessComponent}
 import slinky.core.facade.ReactElement
 import slinky.core.annotations.react
 import slinky.web.ReactDOM, slinky.web.html._
-import models.{Board, Player, User, Participant}, requests.BoardRequests._
+import models.{Board, Player, User, Participant}
+import protocols.BoardProtocol._
 import views.components.ButtonComponent
 
 object BoardView {

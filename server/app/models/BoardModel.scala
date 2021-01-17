@@ -10,6 +10,7 @@ import models.schema.UserSchema._
 import models.{Board, Player, User}
 import games.core.Manifest.Games
 import slick.dbio.DBIOAction
+import java.time.LocalDateTime
 
 class BoardModel(db: Database)(implicit ec: ExecutionContext) {
 
@@ -41,6 +42,7 @@ class BoardModel(db: Database)(implicit ec: ExecutionContext) {
         for {
           _ <- db.run(Players += player)
           player <- db.run(playerByUser(boardId, userId))
+          _ <- db.run(touchBoard(boardId))
         } yield player
       }
       case _ => Future.successful(None)
@@ -75,33 +77,53 @@ class BoardModel(db: Database)(implicit ec: ExecutionContext) {
             .map(_.isOwner).update(true))
 
         else Future.unit
+
+      _ <- db.run(touchBoard(boardId))
+
     } yield result
   }
 
   def promotePlayer(boardId: String, playerId: Int): Future[Boolean] = {
 
-    db.run(for {
+    val promote = for {
+
       player <- playerById(playerId)
+
       previous <- playerByPosition(boardId,
         player.map(_.turnOrder-1).getOrElse(-1))
 
-      swapped <- (player zip previous) map {
-        case (player, previous) => swap(player, previous) map(_ => true)
-      } getOrElse(DBIO.successful(false))
-    } yield swapped)
+      swapped <- (player zip previous) match {
+        case Some((player, previous)) =>
+          swap(player, previous).map(_ => true)
+        case None => DBIO.successful(false)
+      }
+
+      _ <- touchBoard(boardId)
+
+    } yield swapped
+
+    db.run(promote)
   }
 
   def demotePlayer(boardId: String, playerId: Int): Future[Boolean] = {
 
-    db.run(for {
+    val demote = for {
+
       player <- playerById(playerId)
+
       next <- playerByPosition(boardId,
         player.map(_.turnOrder+1).getOrElse(-1))
 
-      swapped <- (player zip next) map {
-        case (player, next) => swap(player, next) map(_ => true)
-      } getOrElse(DBIO.successful(false))
-    } yield swapped)
+      swapped <- (player zip next) match {
+        case Some((player, next)) => swap(player, next).map(_ => true)
+        case None => DBIO.successful(false)
+      }
+
+      _ <- touchBoard(boardId)
+      
+    } yield swapped
+
+    db.run(demote)
   }
 
   def getBoard(boardId: String): Future[Option[Board]] = {
@@ -114,10 +136,11 @@ class BoardModel(db: Database)(implicit ec: ExecutionContext) {
 
   def takeAction(boardId: String, action: Int): Future[Unit] = {
 
-    db.run(for {
-      actions <- actionsByBoard(boardId)
-      _ <- Actions += ActionRow(-1, boardId, action, actions.size)
-    } yield ())
+    for {
+      actions <- db.run(actionsByBoard(boardId))
+      _ <- db.run(Actions += ActionRow(-1, boardId, action, actions.size))
+      _ <- db.run(touchBoard(boardId))
+    } yield ()
   }
 
   def getPlayer(playerId: Int): Future[Option[Player]] = {
@@ -129,19 +152,43 @@ class BoardModel(db: Database)(implicit ec: ExecutionContext) {
   }
 
   def getParticipants(boardId: String): Future[Seq[Participant]] = {
-    db.run((Players.filter(_.boardId === boardId).sortBy(_.turnOrder)
-      join Users on (_.userId === _.id)).result)
-      .map(_.map { case (player, user) => Participant(player, user) })
-      .map(_.sortBy(_.player.turnOrder))
+
+    val players = Players.filter(_.boardId === boardId).sortBy(_.turnOrder)
+    val playersWithUsers = (players join Users on (_.userId === _.id)).result
+
+    val participants = playersWithUsers.map(_.map {
+      case (player, user) => Participant(player, user)
+    })
+
+    db.run(participants).map(_.sortBy(_.player.turnOrder))
   }
 
   def startGame(boardId: String): Future[Boolean] = {
-    db.run(Boards.filter(_.id === boardId).filter(_.status === 0)
-      .map(_.status).update(1)) map(_ > 0)
+
+    val start = for {
+
+      result <- Boards.filter(_.id === boardId)
+        .filter(_.status === 0)
+        .map(_.status).update(1).map(_ > 0)
+
+      _ <- touchBoard(boardId)
+
+    } yield result
+
+    db.run(start)
   }
 
   def deleteBoard(boardId: String): Future[Boolean] = {
-    db.run(Boards.filter(_.id === boardId).delete) map(_ > 0)
+    db.run(Boards.filter(_.id === boardId).delete).map(_ > 0)
+  }
+
+  def boardQuery(): Query[Boards, Board, Seq] = {
+    Boards.sortBy(_.modified.desc)
+  }
+
+  private def touchBoard(boardId: String) = {
+    Boards.filter(_.id === boardId).map(_.modified)
+      .update(LocalDateTime.now().toString)
   }
 
   private def boardById(boardId: String) = {

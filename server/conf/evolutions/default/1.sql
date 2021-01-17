@@ -9,6 +9,7 @@ CREATE TABLE Boards (
   Status INT UNSIGNED,
   RematchBoardId CHAR(5),
   ParentBoardId CHAR(5),
+  Modified TEXT,
   FOREIGN KEY RematchBoardFk (RematchBoardId) REFERENCES Boards(Id) ON DELETE SET NULL,
   FOREIGN KEY ParentBoardFk (ParentBoardId) REFERENCES Boards(Id) ON DELETE SET NULL
 );
@@ -61,9 +62,9 @@ CREATE TABLE Actions (
 
 # --- !Downs
 
-DROP TABLE Boards;
-DROP TABLE Users;
-DROP TABLE Friendships;
-DROP TABLE Invites;
-DROP TABLE Players;
 DROP TABLE Actions;
+DROP TABLE Players;
+DROP TABLE Invites;
+DROP TABLE Friendships;
+DROP TABLE Users;
+DROP TABLE Boards;

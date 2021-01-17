@@ -214,3 +214,7 @@ main {
   left: 0px;
   top: 0px;
 }
+
+.tabs .indicator {
+  color: white;
+}

@@ -9,13 +9,14 @@ import akka.actor.{Actor, ActorRef, Props, ActorSystem}, akka.stream.Materialize
 import io.circe._, io.circe.generic.auto._, io.circe.parser._, io.circe.syntax._
 import models.{BoardModel, UserModel, Board, Player, User}
 import actors.{BoardActor, BoardManager}
+import controllers.helpers.{UserHelper, ResourceHelper}
 
 @Singleton
 class BoardController @Inject()
     (protected val dbConfigProvider: DatabaseConfigProvider, cc: ControllerComponents)
     (implicit protected val ec: ExecutionContext, system: ActorSystem, mat: Materializer)
     extends AbstractController(cc) with HasDatabaseConfigProvider[JdbcProfile]
-    with UserRequest {
+    with UserHelper with ResourceHelper {
 
   private val boardModel = new BoardModel(db)
   private val userModel = new UserModel(db)

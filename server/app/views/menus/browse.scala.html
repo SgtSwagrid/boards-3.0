@@ -3,6 +3,7 @@
 @(user: Option[User] = None)(implicit request: RequestHeader)
 
 @main("Boards | Browse", user) {
-  <div></div>
+  <div id="root"></div>
   <script type="text/javascript">browse()</script>
+  <script type="text/javascript">M.AutoInit()</script>
 }
