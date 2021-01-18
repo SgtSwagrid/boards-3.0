@@ -4,7 +4,7 @@ import scala.concurrent.ExecutionContext
 import scala.collection.mutable
 import akka.actor.{Actor, ActorRef, Props}
 import models.{BoardModel, UserModel, Participant}
-import protocols.BoardProtocol._
+import models.protocols.BoardProtocol._
 
 class BoardManager(boardModel: BoardModel, userModel: UserModel)
     (implicit ec: ExecutionContext) extends Actor {
@@ -13,42 +13,42 @@ class BoardManager(boardModel: BoardModel, userModel: UserModel)
 
   def receive = {
 
-    case (actor: ActorRef, NewSpectator(boardId, _)) => {
+    case (actor: ActorRef, NewSpectator(boardId)) => {
       actors += boardId -> (actor +: actors.get(boardId).getOrElse(Nil))
       boardModel.getBoard(boardId).foreach(actor ! SetBoard(_))
       boardModel.getParticipants(boardId).map(actor ! SetPlayers(_))
     }
 
-    case (actor: ActorRef, JoinGame(boardId, userId, _)) =>
+    case (actor: ActorRef, JoinGame(boardId, userId)) =>
       for {
         _ <- boardModel.joinBoard(boardId, userId)
         participants <- boardModel.getParticipants(boardId)
       } broadcast(boardId, SetPlayers(participants))
     
-    case (actor: ActorRef, RemovePlayer(boardId, playerId, _)) => 
+    case (actor: ActorRef, RemovePlayer(boardId, playerId)) => 
       for {
         _ <- boardModel.removePlayer(boardId, playerId)
         participants <- boardModel.getParticipants(boardId)
       } broadcast(boardId, SetPlayers(participants))
 
-    case (actor: ActorRef, PromotePlayer(boardId, playerId, _)) =>
+    case (actor: ActorRef, PromotePlayer(boardId, playerId)) =>
       for {
         promoted <- boardModel.promotePlayer(boardId, playerId)
         participants <- boardModel.getParticipants(boardId)
       } if (promoted) broadcast(boardId, SetPlayers(participants))
 
-    case (actor: ActorRef, DemotePlayer(boardId, playerId, _)) =>
+    case (actor: ActorRef, DemotePlayer(boardId, playerId)) =>
       for {
         demoted <- boardModel.demotePlayer(boardId, playerId)
         participants <- boardModel.getParticipants(boardId)
       } if (demoted) broadcast(boardId, SetPlayers(participants))
     
-    case (actor: ActorRef, DeleteGame(boardId, _)) => {
+    case (actor: ActorRef, DeleteGame(boardId)) => {
       boardModel.deleteBoard(boardId)
       broadcast(boardId, SetBoard(None))
     }
 
-    case (actor: ActorRef, StartGame(boardId, _)) => {
+    case (actor: ActorRef, StartGame(boardId)) => {
       for {
         started <- boardModel.startGame(boardId)
         board <- boardModel.getBoard(boardId)

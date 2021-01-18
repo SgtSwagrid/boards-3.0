@@ -11,10 +11,15 @@ import models.{Board, Player, User}
 import games.core.Manifest.Games
 import slick.dbio.DBIOAction
 import java.time.LocalDateTime
+import models.protocols.SearchProtocol._
+import models.protocols.BoardProtocol._
 
 class BoardModel(db: Database)(implicit ec: ExecutionContext) {
 
-  private val userModel = new UserModel(db)
+  type BoardsQuery = Query[Boards, Board, Seq]
+
+  private val users = new UserModel(db)
+  private val search = new SearchModel(db)
   
   def createBoard(gameId: Int, userId: Int): Future[Board] = {
 
@@ -182,8 +187,29 @@ class BoardModel(db: Database)(implicit ec: ExecutionContext) {
     db.run(Boards.filter(_.id === boardId).delete).map(_ > 0)
   }
 
-  def boardQuery(): Query[Boards, Board, Seq] = {
-    Boards.sortBy(_.modified.desc)
+  def searchBoards(query: SearchQuery[BoardFilter, BoardOrder], userId: Int):
+      Future[SearchResponse[Board]] = {
+    
+    val filtered = query.filter.foldLeft[BoardsQuery] (Boards)
+      { (q, f) => f match {
+
+        case AllBoards => q
+
+        case FriendsBoards => q
+
+        case MyBoards => q.filter { b =>
+          Players
+            .filter(_.userId === userId)
+            .filter(_.boardId === b.id)
+            .exists
+        }
+      }}
+
+    val sorted = query.ordering match {
+      case MostRecent => filtered.sortBy(_.modified.reverse)
+    }
+
+    search.paginate(sorted, query)
   }
 
   private def touchBoard(boardId: String) = {
@@ -223,7 +249,7 @@ class BoardModel(db: Database)(implicit ec: ExecutionContext) {
   private def playerWithUser(playerId: Int) = {
     playerById(playerId) flatMap {
       case Some(player) =>
-        userModel.userById(player.userId)
+        users.userById(player.userId)
           .map { _ map { user => Some((player, user)) }}
       case None => DBIOAction.successful(None)
     }
@@ -251,7 +277,7 @@ class BoardModel(db: Database)(implicit ec: ExecutionContext) {
 
   private def randomId() = {
     (random() * (1 << 20)).toInt.toHexString
-      .toUpperCase.padTo(5, "0").reverse.toString
+      .toUpperCase.padTo(5, "0").toString
   }
 
   private def canJoin(board: Board, players: Seq[Player], userId: Int) = {

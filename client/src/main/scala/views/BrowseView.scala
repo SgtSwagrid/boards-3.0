@@ -8,9 +8,10 @@ import org.scalajs.dom._
 import slinky.web.html._
 import slinky.web.ReactDOM
 import io.circe.generic.auto._, io.circe.syntax._
-import views.components.TabsComponent
+import views.components.Tabs, views.components.Tabs.Tab
 import models.Board
-import protocols.SearchProtocol._
+import models.protocols.SearchProtocol._
+import models.protocols.BoardProtocol._
 import views.components.menu.PaginationComponent
 
 object BrowseView {
@@ -34,18 +35,27 @@ object BrowseView {
     def initialState = State(0)
 
     def render() = div(className := "container") (
-      TabsComponent(Seq (
-        ("All Boards",      "/assets/img/earth-grid.svg"),
-        ("Friend's Boards", "/assets/img/followers.svg"),
-        ("My Boards",       "/assets/img/user.svg")
-      )),
-      BoardListComponent()
+      Tabs (
+        Tab(
+          "All Boards",
+          "/assets/img/earth-grid.svg",
+          BoardListComponent(AllBoards)
+        ), Tab(
+          "Friend's Boards",
+          "/assets/img/followers.svg",
+          BoardListComponent(FriendsBoards)
+        ), Tab(
+          "My Boards",
+          "/assets/img/user.svg",
+          BoardListComponent(MyBoards)
+        )
+      )
     )
   }
 
   @react class BoardListComponent extends Component {
 
-    type Props = Unit
+    case class Props(filter: BoardFilter)
     case class State(result: Option[SearchResponse[Board]])
     def initialState = State(None)
 
@@ -59,12 +69,16 @@ object BrowseView {
 
     override def componentDidMount() = query(0)
 
-    private def query(page: Int) =
+    private def query(page: Int) = {
 
-      FetchJson.postJson(queryRoute, SearchQuery(page)) {
-        result: SearchResponse[Board] =>{println(result)
+      val query: SearchQuery[BoardFilter, BoardOrder] =
+        SearchQuery(Seq(props.filter), MostRecent, page)
+
+      FetchJson.postJson(queryRoute, query) {
+        result: SearchResponse[Board] =>
           setState(state.copy(result = Some(result)))
-      }}
+      }
+    }
   }
 
   @react class GameComponent extends StatelessComponent {

@@ -2,11 +2,11 @@ package models
 
 import scala.concurrent.{ExecutionContext, Future}
 import slick.jdbc.MySQLProfile.api._
-import protocols.SearchProtocol._
+import models.protocols.SearchProtocol._
 
 class SearchModel(db: Database)(implicit ec: ExecutionContext) {
   
-  def paginate[U](items: Query[_, U, Seq], query: SearchQuery):
+  def paginate[U](items: Query[_, U, Seq], query: SearchQuery[_, _]):
       Future[SearchResponse[U]] = {
 
     val visible = items

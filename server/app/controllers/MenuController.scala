@@ -10,7 +10,8 @@ import scala.concurrent.{ExecutionContext, Future}
 import models.schema.UserSchema._
 import models.{UserModel, BoardModel, SearchModel}
 import controllers.helpers.{UserHelper, JsonHelper}
-import protocols.SearchProtocol._
+import models.protocols.SearchProtocol._
+import models.protocols.BoardProtocol._
 import io.circe.generic.auto._, io.circe.syntax._
 
 @Singleton
@@ -21,7 +22,6 @@ class MenuController @Inject()
 
   private val users = new UserModel(db)
   private val boards = new BoardModel(db)
-  private val search = new SearchModel(db)
   
   def index() = Action.async { implicit request =>
     withUserOpt { user =>
@@ -30,15 +30,15 @@ class MenuController @Inject()
   }
 
   def browse() = Action.async { implicit request =>
-    withUserOpt { user =>
-      Future.successful(Ok(views.html.menus.browse(user)))
+    withUser { user =>
+      Future.successful(Ok(views.html.menus.browse(Some(user))))
     }
   }
 
   def browseQuery() = Action.async { implicit request =>
-    withUserOpt { user =>
-      withJson[SearchQuery] { query =>
-        search.paginate(boards.boardQuery(), query)
+    withUser { user =>
+      withJson[SearchQuery[BoardFilter, BoardOrder]] { query =>
+        boards.searchBoards(query, user.id)
           .map(r => Ok(r.asJson.toString))
       }
     }

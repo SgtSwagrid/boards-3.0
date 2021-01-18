@@ -8,7 +8,7 @@ import slinky.core.facade.ReactElement
 import slinky.core.annotations.react
 import slinky.web.ReactDOM, slinky.web.html._
 import models.{Board, Player, User, Participant}
-import protocols.BoardProtocol._
+import models.protocols.BoardProtocol._
 import views.components.ButtonComponent
 
 object BoardView {
@@ -72,10 +72,10 @@ object BoardView {
         println(e.data.toString)
         decode[BoardResponse](e.data.toString).toOption.get match {
 
-          case SetBoard(board, _) =>
+          case SetBoard(board) =>
             setState(s => s.copy(board = board))
 
-          case SetPlayers(players, _) =>
+          case SetPlayers(players) =>
             setState(s => s.copy (
               players = players,
               player = players.find(_.user.id == props.user.id).map(_.player)
