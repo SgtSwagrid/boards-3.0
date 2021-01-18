@@ -71,8 +71,7 @@ object BrowseView {
 
     private def query(page: Int) = {
 
-      val query: SearchQuery[BoardFilter, BoardOrder] =
-        SearchQuery(Seq(props.filter), MostRecent, page)
+      val query = SearchQuery(Seq(props.filter, MostRecent), page)
 
       FetchJson.postJson(queryRoute, query) {
         result: SearchResponse[Board] =>

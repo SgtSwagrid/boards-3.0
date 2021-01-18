@@ -37,7 +37,7 @@ class MenuController @Inject()
 
   def browseQuery() = Action.async { implicit request =>
     withUser { user =>
-      withJson[SearchQuery[BoardFilter, BoardOrder]] { query =>
+      withJson[SearchQuery[BoardFilter]] { query =>
         boards.searchBoards(query, user.id)
           .map(r => Ok(r.asJson.toString))
       }

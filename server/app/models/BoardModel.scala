@@ -187,10 +187,10 @@ class BoardModel(db: Database)(implicit ec: ExecutionContext) {
     db.run(Boards.filter(_.id === boardId).delete).map(_ > 0)
   }
 
-  def searchBoards(query: SearchQuery[BoardFilter, BoardOrder], userId: Int):
+  def searchBoards(query: SearchQuery[BoardFilter], userId: Int):
       Future[SearchResponse[Board]] = {
     
-    val filtered = query.filter.foldLeft[BoardsQuery] (Boards)
+    val boards = query.filters.foldLeft[BoardsQuery] (Boards)
       { (q, f) => f match {
 
         case AllBoards => q
@@ -203,13 +203,11 @@ class BoardModel(db: Database)(implicit ec: ExecutionContext) {
             .filter(_.boardId === b.id)
             .exists
         }
+
+        case MostRecent => q.sortBy(_.modified.reverse)
       }}
 
-    val sorted = query.ordering match {
-      case MostRecent => filtered.sortBy(_.modified.reverse)
-    }
-
-    search.paginate(sorted, query)
+    search.paginate(boards, query)
   }
 
   private def touchBoard(boardId: String) = {

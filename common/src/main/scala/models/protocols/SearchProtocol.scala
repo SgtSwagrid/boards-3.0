@@ -2,9 +2,8 @@ package models.protocols
 
 object SearchProtocol {
   
-  case class SearchQuery[F, O] (
-    filter: Seq[F],
-    ordering: O,
+  case class SearchQuery[F] (
+    filters: Seq[F],
     page: Int,
     pageSize: Int = 6
   )
