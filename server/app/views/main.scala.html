@@ -22,7 +22,7 @@
     @scalajs.html.scripts("client", routes.Assets.versioned(_).toString,
       name => getClass.getResource(s"/public/$name") != null)
   </head>
-  <body class="grey darken-1"> <!-- background='@routes.Assets.versioned("img/tweed.png")' -->
+  <body class="grey darken-1" background='@routes.Assets.versioned("img/grey_wash_wall.png")'>
     <input type="hidden" id="user" value="@user.asJson"></input>
     <nav>
       <div class="nav-wrapper grey darken-4">

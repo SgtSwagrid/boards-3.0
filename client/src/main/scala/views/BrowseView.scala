@@ -13,6 +13,8 @@ import models.Board
 import models.protocols.SearchProtocol._
 import models.protocols.BoardProtocol._
 import views.components.menu.PaginationComponent
+import views.helpers.FetchJson
+import views.components.ButtonComponent
 
 object BrowseView {
 

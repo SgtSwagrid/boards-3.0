@@ -12,7 +12,7 @@ import slinky.web.html._
 import io.circe._, io.circe.generic.auto._, io.circe.parser._, io.circe.syntax._
 import models.Board, games.core._
 import views.components.menu.{LocalMenuComponent, MenuItem}
-import views.FetchJson
+import views.helpers.FetchJson
 
 object CreateView {
 

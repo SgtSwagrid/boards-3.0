@@ -9,8 +9,6 @@ trait JsonHelper { this: AbstractController =>
   
   protected def withJson[A](f: A => Future[Result])
       (implicit request: Request[AnyContent], decoder: Decoder[A]): Future[Result] = {
-
-    println(request.body.asJson.toString)
     
     decode[A](request.body.asJson.get.toString) match {
       case Right(a) => f(a)

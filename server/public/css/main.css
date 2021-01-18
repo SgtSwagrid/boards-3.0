@@ -35,7 +35,8 @@ main {
 
 .btn {
   position: relative;
-  padding: 5px 20px 5px 80px;
+  padding: 5px 20px 5px 20px;
+  margin-top: 10px;
   margin-bottom: 10px;
   border-radius: 0px;
 }
@@ -48,6 +49,14 @@ main {
   height: 100%;
   padding: 5px 15px;
   border-radius: 0px;
+}
+
+.btn span {
+  margin-right: 60px;
+}
+
+.tabs {
+  margin-bottom: 20px !important;
 }
 
 .small-icon {
@@ -72,6 +81,7 @@ main {
   /*border-style: none none solid none;
   border-width: 4px;
   border-color: plum;*/
+  z-index: 100;
 }
 
 .page-footer {
@@ -83,6 +93,7 @@ main {
   bottom: 0;
   left: 0;
   width: 100%;
+  z-index: 99;
 }
 
 .copyright {

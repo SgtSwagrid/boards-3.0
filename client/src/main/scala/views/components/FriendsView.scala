@@ -83,7 +83,7 @@ object FriendsView {
       div(className := "col s6 left-align white-text medium-text") (props.user.username)
       ,
       // button if the user is not friends yet
-      ButtonComponent("Add", "/assets/img/add-user.svg", addFriend)
+      ButtonComponent("Add", "/assets/img/add-user.svg", false, addFriend)
     )
 
   private def view() = {

@@ -1,4 +1,4 @@
-package views
+package views.helpers
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.ExecutionContext.Implicits.global
