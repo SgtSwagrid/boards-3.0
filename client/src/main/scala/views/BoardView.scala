@@ -17,12 +17,6 @@ object BoardView {
     def owner = player.map(_.isOwner).getOrElse(false)
   }
 
-  val createRoute  = "/games/create/"
-  val gameRoute    = "/games/board/"
-  val detailsRoute = "/games/details/"
-  val joinRoute    = "/games/join/"
-  val leaveRoute   = "/games/leave/"
-
   lazy val socketRoute = document.getElementById("socketRoute")
     .asInstanceOf[html.Input].value.replace("http", "ws")
 

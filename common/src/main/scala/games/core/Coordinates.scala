@@ -11,4 +11,15 @@ object Coordinates {
     def * (d: Int) = Vec2(x * d, y * d)
     def unary_- = Vec2(-x, -y)
   }
+
+  object Vec2 {
+
+    val zero = Vec2(0, 0)
+    val unit = Vec2(1, 1)
+
+    val right = Vec2(1, 0)
+    val up = Vec2(0, 1)
+    val left = Vec2(-1, 0)
+    val down = Vec2(0, -1)
+  }
 }
