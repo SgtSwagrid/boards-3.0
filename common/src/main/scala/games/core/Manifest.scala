@@ -6,7 +6,8 @@ import models.User
 object Manifest {
   
   final val Games = List[Game](
-    new TicTacToe(0)
+    new TicTacToe(0),
+    new Chess(1)
   )
 
   final val Users = List[User] (

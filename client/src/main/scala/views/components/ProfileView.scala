@@ -18,7 +18,7 @@ import slinky.web.svg.result
 import slinky.web.svg.requiredExtensions
 import models.protocols.SearchProtocol.SearchResponse
 import models.protocols.SearchProtocol.SearchQuery
-import views.FetchJson
+import views.helpers.FetchJson
 import views.components.menu.SearchComponent
 import slinky.core.facade.ErrorBoundaryInfo
 
@@ -215,7 +215,7 @@ object ProfileView {
       div(className := "col s6 left-align white-text medium-text") (props.user.username)
       ,
       // button if the user is not friends yet
-      ButtonComponent("Add", "/assets/img/add-user.svg", addFriend)
+      ButtonComponent("Add", "/assets/img/add-user.svg", false, addFriend)
     )
 
   private def view(user: User) =

@@ -17,12 +17,6 @@ object BoardView {
     def owner = player.map(_.isOwner).getOrElse(false)
   }
 
-  val createRoute  = "/games/create/"
-  val gameRoute    = "/games/board/"
-  val detailsRoute = "/games/details/"
-  val joinRoute    = "/games/join/"
-  val leaveRoute   = "/games/leave/"
-
   lazy val socketRoute = document.getElementById("socketRoute")
     .asInstanceOf[html.Input].value.replace("http", "ws")
 
@@ -99,7 +93,7 @@ object BoardView {
     type State = Unit
     def initialState = ()
 
-    def render() = div(className := "sidebar grey darken-2") (
+    def render() = div(className := "sidebar grey darken-2 z-depth-2") (
       div(className := "sidebar-header grey darken-3") (
         div(className := "medium-text white-text") (props.board.game.name),
         div(className := "small-text grey-text") ("#" + props.board.id)
@@ -112,16 +106,16 @@ object BoardView {
 
           Option.when(props.session.owner) { div (
             Option.when(props.board.game.players.contains(props.players.size)) {
-              ButtonComponent("Start Game", "/assets/img/play.svg", start)
+              ButtonComponent("Start Game", "/assets/img/play.svg", true, start)
             },
-            ButtonComponent("Cancel Game", "/assets/img/trash.svg", delete)
+            ButtonComponent("Cancel Game", "/assets/img/trash.svg", true, delete)
           )},
 
           props.session.player match {
             case Some(player) =>
-              ButtonComponent("Leave Game", "/assets/img/cancel.svg", leave)
+              ButtonComponent("Leave Game", "/assets/img/cancel.svg", true, leave)
             case None =>
-              ButtonComponent("Join Game", "/assets/img/join.svg", join)
+              ButtonComponent("Join Game", "/assets/img/join.svg", true, join)
           }
 
         ) else if (props.board.ongoing) div (
@@ -131,7 +125,7 @@ object BoardView {
         ) else if (props.board.ended) div (
 
           Option.when(props.session.owner) {
-            ButtonComponent("Delete Game", "/assets/img/remove.svg", delete)
+            ButtonComponent("Delete Game", "/assets/img/remove.svg", true, delete)
           }
 
         ) else div()

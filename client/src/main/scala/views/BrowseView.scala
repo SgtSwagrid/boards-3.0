@@ -13,6 +13,8 @@ import models.Board
 import models.protocols.SearchProtocol._
 import models.protocols.BoardProtocol._
 import views.components.menu.PaginationComponent
+import views.helpers.FetchJson
+import views.components.ButtonComponent
 
 object BrowseView {
 
@@ -36,15 +38,15 @@ object BrowseView {
 
     def render() = div(className := "container") (
       Tabs (
-        Tab(
+        Tab (
           "All Boards",
           "/assets/img/earth-grid.svg",
           BoardListComponent(AllBoards)
-        ), Tab(
+        ), Tab (
           "Friend's Boards",
           "/assets/img/followers.svg",
           BoardListComponent(FriendsBoards)
-        ), Tab(
+        ), Tab (
           "My Boards",
           "/assets/img/user.svg",
           BoardListComponent(MyBoards)
