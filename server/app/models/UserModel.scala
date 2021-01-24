@@ -5,8 +5,18 @@ import scala.concurrent.{ExecutionContext, Future}
 import org.mindrot.jbcrypt.BCrypt
 import models.schema.UserSchema._
 import forms.UserForms._
+import models.protocols.SearchProtocol.SearchQuery
+import models.protocols.UserProtocol.UserFilter
+import models.protocols.SearchProtocol.SearchResponse
+import models.protocols.UserProtocol.NameContainsSubstring
+import models.protocols.UserProtocol.NameAlphabetical
 
 class UserModel(db: Database)(implicit ec: ExecutionContext) {
+
+  // Query[TABLE, OUTPUT TYPE, OUTPUT STRUCTURE]
+  type UsersQuery = Query[Users, User, Seq]
+
+  private val search = new SearchModel(db)
 
   def getUser(userId: Int): Future[Option[User]] = {
     db.run(userById(userId))
@@ -56,6 +66,27 @@ class UserModel(db: Database)(implicit ec: ExecutionContext) {
         }
       }
     }
+  }
+
+  def searchUsers(query: SearchQuery[UserFilter]): Future[SearchResponse[User]] = {
+
+    val usersResults = query.filters.foldLeft[UsersQuery] (Users) {
+      // query q, filters f 
+      (q, f) => f match { 
+
+        case NameContainsSubstring(substring: String) => 
+          q.filter(_.username.toUpperCase like s"%$substring%".toUpperCase())
+
+        case NameAlphabetical => q.sortBy(_.username)
+          
+      }
+    }
+
+    search.paginate(usersResults, query)
+  }
+
+  def getUserByName(username: String): Future[Option[User]] = {
+    db.run(userByName(username))
   }
 
   def userById(userId: Int) = {

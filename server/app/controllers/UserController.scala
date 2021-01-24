@@ -5,17 +5,23 @@ import scala.concurrent.{ExecutionContext, Future}
 import play.api.mvc.{AbstractController, ControllerComponents, Request, Result, AnyContent}
 import slick.jdbc.JdbcProfile
 import slick.jdbc.MySQLProfile.api._
+import io.circe._, io.circe.generic.auto._, io.circe.parser._, io.circe.syntax._
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import models.schema.UserSchema._
 import models.UserModel
 import forms.UserForms._
-import controllers.helpers.UserHelper
+import controllers.helpers.{UserHelper, JsonHelper, ResourceHelper}
+import models.protocols.SearchProtocol.SearchQuery
+import models.protocols.UserProtocol.UserFilter
 
 @Singleton
 class UserController @Inject()
     (protected val dbConfigProvider: DatabaseConfigProvider, cc: ControllerComponents)
     (protected implicit val ec: ExecutionContext) extends AbstractController(cc)
-    with HasDatabaseConfigProvider[JdbcProfile] with UserHelper {
+    with HasDatabaseConfigProvider[JdbcProfile] 
+    with ResourceHelper
+    with JsonHelper
+    with UserHelper {
   
   private val userModel = new UserModel(db)
 
@@ -56,15 +62,26 @@ class UserController @Inject()
     Redirect(next).withNewSession
   }
 
-  def userProfile() = Action.async { implicit request =>
+  def user(username: String) = Action.async { implicit request =>
     withUser { user =>
-      Future.successful(Ok(views.html.users.profile(user)))
+      getOr404(userModel.getUserByName(username)) { profileUser =>
+        Future.successful(Ok(views.html.users.profile(user, profileUser)))
+      }
     }
   }
 
-  def userFriends() = Action.async { implicit request =>
+  def userProfile() = Action.async { implicit request =>
     withUser { user =>
-      Future.successful(Ok(views.html.users.friends(user)))
+      Future.successful(Ok(views.html.users.profile(user, user)))
+    }
+  }
+
+  def userQuery() = Action.async { implicit request =>
+    withUser { user =>
+      withJson[SearchQuery[UserFilter]] { query =>
+        userModel.searchUsers(query)
+          .map(r => Ok(r.asJson.toString))
+      }
     }
   }
 

@@ -1,22 +1,11 @@
 @import models.User
+@import io.circe._, io.circe.generic.auto._, io.circe.parser._, io.circe.syntax._
 
-@(user: User)(implicit request: RequestHeader, flash: Flash)
+@(user: User, profileUser: User)(implicit request: RequestHeader, flash: Flash)
 
 @main("Boards | Profile", Some(user)) {
-  <div class="container center-align">
-    <h3 class="white-text">@user.username</h3>
-    <p class="white-text">
-      <span class="green-text">0 Wins</span> &bull;
-      <span class="yellow-text">0 Draws</span> &bull;
-      <span class="red-text">0 Losses</span>
-    </p>
-    <br>
-    <div class="col s12 centre-align">
-      <a class="btn yellow darken-2 black-text" href="/users/profile/friends"
-          style="width: 200px">
-        <img class="small-icon" src='@routes.Assets.versioned("img/followers.svg")'>
-        <span class="grey-text text-darken-4">My Friends</span>
-      </a> 
-    </div>
-  </div>
+  <div id="root"></div>
+  <input type="hidden" id="profileUser" value="@profileUser.asJson"></input>
+  <script type="text/javascript">profileView()</script>
+  <script type="text/javascript">M.AutoInit()</script>
 }
