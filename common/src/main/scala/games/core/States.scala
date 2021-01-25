@@ -16,6 +16,7 @@ object States {
   )
 
   type AnyState = State[_ <: Piece, _ <: Coordinate, _]
+  type CState[C <: Coordinate] = State[_ <: Piece, C, _]
 
   case class PlayerState[P <: Piece](
     score: Int,

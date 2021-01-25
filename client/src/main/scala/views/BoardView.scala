@@ -10,6 +10,7 @@ import slinky.web.ReactDOM, slinky.web.html._
 import models.{Board, Player, User, Participant}
 import models.protocols.BoardProtocol._
 import views.components.ButtonComponent
+import games.core.States.AnyState
 
 object BoardView {
 
@@ -50,13 +51,14 @@ object BoardView {
     case class State (
       board: Option[Board],
       players: Seq[Participant],
-      player: Option[Player]
+      player: Option[Player],
+      state: Option[AnyState]
     )
 
-    def initialState = State(None, Seq(), None)
+    def initialState = State(None, Seq(), None, None)
 
-    def render() = state.board.map { board =>
-      GameComponent(board, state.players,
+    def render() = state.board map { board =>
+      GameComponent(board, state.players, null,
         BoardSession(props.user, state.player, props.socket)
       )
     }
@@ -74,17 +76,29 @@ object BoardView {
               players = players,
               player = players.find(_.user.id == props.user.id).map(_.player)
             ))
+
+          case PushActions(actions) =>
+            {}
         }
       }
   }
 
   @react class GameComponent extends Component {
 
-    case class Props(board: Board, players: Seq[Participant], session: BoardSession)
+    case class Props (
+      board: Board,
+      players: Seq[Participant],
+      state: AnyState,
+      session: BoardSession
+    )
+
     type State = Unit
     def initialState = ()
 
-    def render() = SidebarComponent(props.board, props.players, props.session)
+    def render() = div (
+      SidebarComponent(props.board, props.players, props.session),
+      BoardComponent(props.board, props.state)
+    )
   }
 
   @react class SidebarComponent extends Component {

@@ -6,18 +6,23 @@ import games.core.Manifolds._
 import games.core.Coordinates._
 import games.core.Layouts._
 import games.core.Backgrounds._
+import games.core.Pieces._
 
-abstract class Game(val id: Int) {
+abstract class Game[C <: Coordinate](val id: Int) {
 
   val name: String
   val players: Seq[Int]
   
-  type Vec <: Coordinate
-  type StateT <: AnyState
+  type Vec = C
+  type StateT <: State[_ <: Piece, C, _]
   
-  val manifold: Manifold[Vec]
-  val layout: Layout[Vec]
-  val background: Background[Vec]
+  val manifold: Manifold[C]
+  val layout: Layout[C]
+  val background: Background[C]
 
   val start: StateT
+}
+
+object Game {
+  type AnyGame = Game[_ <: Coordinate]
 }
