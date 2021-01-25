@@ -24,14 +24,26 @@ object CreateView {
   def create() = {
 
     ReactDOM.render (
-
-      LocalMenuComponent (
-        Manifest.Games map { game => MenuItem (
-          GameComponent(game), List(game.name)
-        )}
-      ),
-      
+      CreateComponent(),
       document.getElementById("root")
+    )
+  }
+
+  @react class CreateComponent extends StatelessComponent {
+
+    type Props = Unit
+
+    def render() = div(className := "container") (
+      br(), h4(className := "white-text center")("Start a new game."),
+      div(className := "row") (
+        div(className := "col s12 m10 push-m1 l8 push-l2 xl6 push-xl3") (
+          LocalMenuComponent (
+            Manifest.Games map { game => MenuItem (
+              GameComponent(game), List(game.name)
+            )}
+          )
+        )
+      )
     )
   }
 
@@ -44,7 +56,8 @@ object CreateView {
       onClick := (_ => create(props.game))
     ) (
       div(className := "menu-item-body") (
-        span(className := "white-text medium-text") (props.game.name)
+        span(className := "white-text medium-text") (props.game.name),
+        img(className := "btn-icon", src := "/assets/img/play.svg")
       )
     )
 

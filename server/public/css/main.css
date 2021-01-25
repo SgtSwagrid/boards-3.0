@@ -89,7 +89,7 @@ main {
   /*border-style: solid none none none;
   border-width: 4px;
   border-color: plum;*/
-  position: fixed;
+  position: absolute;
   bottom: 0;
   height: 185px;
   left: 0;
@@ -101,7 +101,6 @@ main {
   display: inline-block;
   vertical-align: middle;
   margin-left: 20px;
-  bottom: 0px;
   height: 50px;
 }
 
@@ -109,6 +108,12 @@ main {
   width: 50px;
   height: 50px;
   vertical-align: middle;
+}
+
+.footer-copyright {
+  position: absolute;
+  bottom: 0px;
+  width: 100%;
 }
 
 .notification {
@@ -123,16 +128,16 @@ main {
   margin-bottom: 100px;
   border-style: none none solid none;
   border-width: 4px;
-  border-color: plum;
+  border-color:  #fbc02d;
 }
 
 .login-panel-header {
-  background-image: url("/assets/img/dark_geometric.png");
+  /*background-image: url("/assets/img/dark_geometric.png");*/
   border-radius: 4px 4px 0px 0px;
   padding: 1px;
-  border-style: none none solid none;
+  /*border-style: none none solid none;
   border-width: 4px;
-  border-color: #fbc02d;
+  border-color: #fbc02d;*/
 }
 
 .login-panel-body {
@@ -155,7 +160,7 @@ main {
 }
 
 .menu-item {
-  margin-top: 20px;
+  margin-top: 15px;
   border-radius: 4px;
   border-style: none none none solid;
   border-width: 4px;

@@ -1,13 +1,13 @@
 @import models.User
 
-@(user: Option[User] = None)(implicit request: RequestHeader, flash: Flash)
+@(user: Option[User] = None, next: String)(implicit request: RequestHeader, flash: Flash)
 
 @main("Boards | Login", user) {
   <div class="container center-align">
     <div class="row">
       <div class="col s12 m8 push-m2 l6 push-l3 xl4 push-xl4">
         <div class="login-panel grey darken-3 z-depth-3">
-          <div class="login-panel-header blue-grey lighten-1 z-depth-1">
+          <div class="login-panel-header blue-grey darken-2 z-depth-1">
             <h5 class="white-text">Login</h5>
           </div>
           <div class="login-panel-body">
@@ -22,13 +22,13 @@
                 <label class="white-text" for="password">Password</label>
               </div>
               <p class="red-text">@flash.get("error")</p>
-              <button class="btn grey darken-2 waves-effect" type="submit"
-                  style="height: 45px; margin: 20px;">
-                <img class="small-icon" src='@routes.Assets.versioned("img/login.svg")'>
-                <span class="white-text text-darken-4">Login</span>
+              <button class="btn yellow darken-2 waves-effect" type="submit"
+                  style="width: 175px;">
+                <b class="left blue-grey-text text-darken-4">Login</b>
+                <img class="btn-icon blue-grey darken-3" src='@routes.Assets.versioned("img/join.svg")'>
               </button>
             </form>
-            <a class="white-text" href="/users/register">Create account</a>
+            <a class="white-text" href="@{s"/users/register?next=$next"}">Create account</a>
           </div>
         </div>
       </div>

@@ -30,14 +30,16 @@ class UserController @Inject()
 
       request.body.asFormUrlEncoded map { form =>
         userModel.validateUser(LoginForm(form)) map {
-          _.map(user => Redirect(next)
+
+          case Right(user) => Redirect(next)
             .withSession(
               "userId" -> user.id.toString,
-              "csrfToken" -> play.filters.csrf.CSRF.getToken.map(_.value).getOrElse("")))
-          .left.map(error => Redirect(routes.UserController.login())
-            .flashing(showError(error))).merge
+              "csrfToken" -> play.filters.csrf.CSRF.getToken.map(_.value).getOrElse(""))
+
+          case Left(error) => Redirect(routes.UserController.login())
+            .flashing(showError(error))
         }
-      } getOrElse(Future.successful(Ok(views.html.users.login(user))))
+      } getOrElse(Future.successful(Ok(views.html.users.login(user, next))))
     }
   }
 
@@ -46,15 +48,17 @@ class UserController @Inject()
       
       request.body.asFormUrlEncoded map { form =>
         userModel.createUser(RegisterForm(form)) map {
-          _.map(user => Redirect(next)
+
+          case Right(user) => Redirect(next)
             .withSession(
               "userId" -> user.id.toString,
               "csrfToken" -> play.filters.csrf.CSRF
-                .getToken.map(_.value).getOrElse("")))
-          .left.map(error => Redirect(routes.UserController.register())
-            .flashing(showError(error))).merge
+                .getToken.map(_.value).getOrElse(""))
+
+          case Left(error) => Redirect(routes.UserController.register())
+            .flashing(showError(error))
         }
-      } getOrElse(Future.successful(Ok(views.html.users.register(user))))
+      } getOrElse(Future.successful(Ok(views.html.users.register(user, next))))
     }
   }
 

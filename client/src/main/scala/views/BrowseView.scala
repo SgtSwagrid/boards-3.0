@@ -62,12 +62,16 @@ object BrowseView {
     def initialState = State(None)
 
     def render() =
-      state.result map { result => div (
-        result.items map { board =>
-          GameComponent(board)
-        },
-        PaginationComponent(result.page, result.pages, query _)
-      )}
+      state.result map { result =>
+        div(className := "row") (
+          div (className := "col s12 m10 push-m1 l8 push-l2 xl6 push-xl3") (
+            result.items map { board =>
+              GameComponent(board)
+            },
+            PaginationComponent(result.page, result.pages, query _)
+          )
+        )
+      }
 
     override def componentDidMount() = query(0)
 
@@ -92,7 +96,8 @@ object BrowseView {
     ) (
       div(className := "menu-item-body") (
         span(className := "white-text medium-text") (props.board.game.name),
-        span(className := "grey-text small-text") (s" #${props.board.id}")
+        span(className := "grey-text small-text") (s" #${props.board.id}"),
+        img(className := "btn-icon", src := "/assets/img/play.svg")
       )
     )
 
