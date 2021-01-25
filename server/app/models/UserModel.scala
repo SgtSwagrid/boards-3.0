@@ -10,6 +10,11 @@ import models.protocols.UserProtocol.UserFilter
 import models.protocols.SearchProtocol.SearchResponse
 import models.protocols.UserProtocol.NameContainsSubstring
 import models.protocols.UserProtocol.NameAlphabetical
+import models.Friendship
+import io.circe.Decoder.state
+import models.schema.FriendshipSchema.Friendships
+import akka.http.javadsl.model.DateTime
+import java.time.LocalDateTime
 
 class UserModel(db: Database)(implicit ec: ExecutionContext) {
 
@@ -95,5 +100,14 @@ class UserModel(db: Database)(implicit ec: ExecutionContext) {
 
   def userByName(username: String) = {
     Users.filter(_.username === username).result.headOption
+  }
+
+  def createFriendship(senderId: Int, receiverId: Int): Future[Friendship] = {
+
+    val friendship = Friendship(userId1=senderId, userId2=receiverId, 
+      status=0, date=LocalDateTime.now())
+    
+    db.run(Friendships += friendship).map(_ => friendship)
+      
   }
 }
