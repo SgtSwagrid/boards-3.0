@@ -13,6 +13,7 @@ import io.circe._, io.circe.generic.auto._, io.circe.parser._, io.circe.syntax._
 import models.Board, games.core._
 import views.components.menu.{LocalMenuComponent, MenuItem}
 import views.helpers.FetchJson
+import games.core.Game.AnyGame
 
 object CreateView {
 
@@ -36,7 +37,7 @@ object CreateView {
 
   @react class GameComponent extends StatelessComponent {
 
-    case class Props(game: Game)
+    case class Props(game: AnyGame)
 
     def render() = div (
       className := "menu-item block grey darken-3 z-depth-2 waves-effect hoverable",
@@ -47,7 +48,7 @@ object CreateView {
       )
     )
 
-    private def create(game: Game) =
+    private def create(game: AnyGame) =
       FetchJson.post(createRoute + game.id) { board: Board =>
         window.location.href = gameRoute + board.id
       }

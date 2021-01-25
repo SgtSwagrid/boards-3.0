@@ -41,8 +41,8 @@ object Manifolds {
 
     val positions = for {
       (row, y) <- rows.zipWithIndex
-      (part, offset) <- row.sections zip row.offsets
-      x <- (0 until part.size).map(_ + offset)
+      (section, offset) <- row.sections zip row.offsets
+      x <- (0 until section.size).map(_ + offset)
     } yield Vec2(x, y)
 
     def inBounds(pos: Vec2) =

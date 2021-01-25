@@ -195,12 +195,12 @@ class BoardModel(db: Database)(implicit ec: ExecutionContext) {
 
         case AllBoards => q
 
-        case FriendsBoards => q
+        case FriendsBoards => q.filter(_.id === "") //TODO
 
-        case MyBoards => q.filter { b =>
+        case MyBoards => q.filter { board =>
           Players
             .filter(_.userId === userId)
-            .filter(_.boardId === b.id)
+            .filter(_.boardId === board.id)
             .exists
         }
 

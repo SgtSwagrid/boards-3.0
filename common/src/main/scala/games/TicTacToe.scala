@@ -10,14 +10,13 @@ import games.core.Layouts._
 import games.core.Backgrounds._
 import games.core.Colour
 
-class TicTacToe(id: Int) extends Game(id) {
+class TicTacToe(id: Int) extends Game[Vec2](id) {
 
   val name = "Tic Tac Toe"
   val players = Seq(2)
 
   sealed trait TicTacToePiece extends Piece
 
-  type Vec = Vec2
   type StateT = State[TicTacToePiece, Vec, Null]
   
   val manifold = RectangleManifold(3, 3)

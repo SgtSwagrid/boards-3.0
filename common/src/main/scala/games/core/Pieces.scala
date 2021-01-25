@@ -2,7 +2,11 @@ package games.core
 
 object Pieces {
   
-  trait PieceType extends Serializable
+  trait PieceType {
+    val texture: String
+  }
 
-  trait Piece extends Serializable
+  trait Piece {
+    val pieceType: PieceType
+  }
 }
