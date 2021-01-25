@@ -13,6 +13,8 @@ import forms.UserForms._
 import controllers.helpers.{UserHelper, JsonHelper, ResourceHelper}
 import models.protocols.SearchProtocol.SearchQuery
 import models.protocols.UserProtocol.UserFilter
+import java.nio.file.attribute.UserPrincipalLookupService
+import cats.implicits
 
 @Singleton
 class UserController @Inject()
@@ -85,6 +87,14 @@ class UserController @Inject()
       withJson[SearchQuery[UserFilter]] { query =>
         userModel.searchUsers(query)
           .map(r => Ok(r.asJson.toString))
+      }
+    }
+  }
+
+  def friendRequest(receiverId: Int) = Action.async { implicit request =>
+    withUser { user => 
+      userModel.createFriendship(user.id, receiverId) map { friendship =>
+        Ok(friendship.asJson.toString)
       }
     }
   }
