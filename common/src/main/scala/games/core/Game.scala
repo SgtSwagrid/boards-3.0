@@ -6,7 +6,6 @@ import games.core.Manifolds._
 import games.core.Coordinates._
 import games.core.Layouts._
 import games.core.Backgrounds._
-import games.core.Pieces._
 
 abstract class Game[C <: Coordinate](val id: Int) {
 
@@ -20,7 +19,7 @@ abstract class Game[C <: Coordinate](val id: Int) {
   val layout: Layout[C]
   val background: Background[C]
 
-  val start: StateT
+  def start(players: Int): StateT
 }
 
 object Game {

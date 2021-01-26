@@ -4,7 +4,6 @@ import games.core.States._
 import games.core.Coordinates._
 import games.core.Layouts._
 import games.core.Scene._
-import games.core.Pieces._
 
 class Scene[C <: Coordinate](game: Game[C], state: CState[C]) {
   
@@ -21,7 +20,7 @@ class Scene[C <: Coordinate](game: Game[C], state: CState[C]) {
     case (pos, piece) => PieceImage (
       game.layout.position(pos),
       game.layout.size(pos),
-      piece.pieceType.texture
+      piece.texture
     )
   }
 

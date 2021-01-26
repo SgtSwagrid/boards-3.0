@@ -58,7 +58,7 @@ object BoardView {
     def initialState = State(None, Seq(), None, None)
 
     def render() = state.board map { board =>
-      GameComponent(board, state.players, board.game.start,
+      GameComponent(board, state.players, board.game.start(state.players.size),
         BoardSession(props.user, state.player, props.socket)
       )
     }

@@ -2,7 +2,6 @@ package games
 
 import games.core.Game
 import games.core.States._
-import games.core.Pieces._
 import games.core.Actions._
 import games.core.Manifolds._
 import games.core.Coordinates._
@@ -23,5 +22,5 @@ class TicTacToe(id: Int) extends Game[Vec2](id) {
   val layout = GridLayout
   val background = Checkerboard(Colour.hintOfPensive, Colour.lynxWhite)
 
-  val start = State()
+  def start(players: Int) = State()
 }

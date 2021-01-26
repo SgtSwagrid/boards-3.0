@@ -9,6 +9,7 @@ import models.Board
 import games.core.Game
 import games.core.States._
 import games.core.Scene
+import org.scalajs.dom.raw.HTMLImageElement
 
 @react class BoardComponent extends Component {
 
@@ -56,6 +57,20 @@ import games.core.Scene
       
       context.fillStyle = tile.colour.hex
       context.fillRect(x, y, size.x, size.y)
+    }
+
+    scene.pieces map { piece =>
+
+      val x = piece.position.x * sf + hoffset
+      val y = height - (piece.position.y * sf + voffset) - piece.size.y * sf
+
+      val size = piece.size * sf
+    
+      val image = document.createElement("img").asInstanceOf[HTMLImageElement]
+      image.src = "/assets/img/" + piece.texture
+      image.onload = (e: Event) => {
+        context.drawImage(image, x, y, size.x, size.y)
+      }
     }
   }
 }

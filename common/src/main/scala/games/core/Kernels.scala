@@ -1,7 +1,6 @@
 package games.core
 
 import games.core.States._
-import games.core.Pieces._
 import games.core.Coordinates._
 
 object Kernels {
