@@ -21,7 +21,7 @@ class Chess(id: Int) extends Game[Vec2](id) {
 
   val manifold = RectangleManifold(8, 8)
   val layout = GridLayout
-  val background = Checkerboard(Colour.white, Colour.black)
+  val background = Checkerboard(Colour.sourLemon, Colour.brightYarrow)
 
   val start = State()
 }

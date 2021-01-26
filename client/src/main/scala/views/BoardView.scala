@@ -58,14 +58,13 @@ object BoardView {
     def initialState = State(None, Seq(), None, None)
 
     def render() = state.board map { board =>
-      GameComponent(board, state.players, null,
+      GameComponent(board, state.players, board.game.start,
         BoardSession(props.user, state.player, props.socket)
       )
     }
 
     override def componentDidMount() =
       props.socket.onmessage = { (e: MessageEvent) =>
-        println(e.data.toString)
         decode[BoardResponse](e.data.toString).toOption.get match {
 
           case SetBoard(board) =>

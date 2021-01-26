@@ -21,7 +21,7 @@ class TicTacToe(id: Int) extends Game[Vec2](id) {
   
   val manifold = RectangleManifold(3, 3)
   val layout = GridLayout
-  val background = Checkerboard(Colour.white, Colour.black)
+  val background = Checkerboard(Colour.hintOfPensive, Colour.lynxWhite)
 
   val start = State()
 }

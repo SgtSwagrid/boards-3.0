@@ -1,28 +1,32 @@
 package games.core
 
-case class Colour private (r: Int, g: Int, b: Int, hex: String)
+case class Colour private (hex: String)
 
 object Colour {
 
-  val red = rgb(255, 0, 0)
-  val green = rgb(0, 255, 0)
-  val blue = rgb(0, 0, 255)
+  val black = hex("#000000")
+  val red = hex("#FF0000")
+  val green = hex("#00FF00")
+  val blue = hex("#0000FF")
+  val yellow = hex("#FFFF00")
+  val purple = hex("#FF00FF")
+  val cyan = hex("#00FFFF")
+  val white = hex("#FFFFFF")
 
-  val white = rgb(255, 255, 255)
-  val black = rgb(0, 0, 0)
+  // American Palette
+  val greenDarnerTail = hex("#74B9FF")
+  val electronBlue = hex("#0984E3")
+  val sourLemon = hex("#FFEAA7")
+  val brightYarrow = hex("#FDBC6E")
 
-  def rgb(r: Int, g: Int, b: Int) = Colour(r, g, b,
-    (r * (1 << 16) + g * (1 << 8) + b).toHexString)
+  // British Palette
+  val lynxWhite = hex("#F5F6FA")
+  val hintOfPensive = hex("#DCDDE1")
 
-  def hex(hex: String) = {
-
-    val hexInt = Integer.parseInt(hex.dropWhile(_ == '#'), 16)
-
-    Colour (
-      hexInt / (1 << 16),
-      hexInt / (1 << 8) % (1 << 8),
-      hexInt % (1 << 8),
-      hex
-    )
+  def rgb(r: Int, g: Int, b: Int) = {
+    val hex = (r * (1 << 16) + g * (1 << 8) + b)
+    Colour("#" + hex.toHexString.reverse.padTo(6, "0").reverse.mkString)
   }
+
+  def hex(hex: String) = Colour(hex)
 }
