@@ -5,3 +5,4 @@ target/
 .bsp/
 .vscode/
 metals.sbt
+boards.code-workspace
