@@ -4,7 +4,7 @@ import models.{Board, Participant}
 
 object BoardProtocol {
   
-  sealed trait BoardRequest
+  sealed trait BoardRequest { val boardId: String }
   
   case class NewSpectator(boardId: String) extends BoardRequest
   case class JoinGame(boardId: String, userId: Int) extends BoardRequest
@@ -19,7 +19,9 @@ object BoardProtocol {
 
   case class SetBoard(board: Option[Board]) extends BoardResponse
   case class SetPlayers(players: Seq[Participant]) extends BoardResponse
-  case class PushActions(actions: Seq[Int]) extends BoardResponse
+  case class PushActions(actions: Seq[ActionId]) extends BoardResponse
+
+  case class ActionId(actionId: Int, turn: Int)
 
   sealed trait BoardFilter
 

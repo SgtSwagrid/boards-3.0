@@ -1,13 +1,12 @@
 package games.core
 
-import games.core.Coordinates._
-import games.core.Colour
+import games.core.{Colour, Vec}
 
-object Backgrounds {
-  
-  trait Background[C <: Coordinate] {
-    def colour(pos: C): Colour
-  }
+trait Background[V <: Vec] {
+  def colour(pos: V): Colour
+}
+
+object Background {
 
   case class Checkerboard(c1: Colour, c2: Colour)
       extends Background[Vec2] {

@@ -1,22 +1,18 @@
 package games
 
-import games.core.Game
-import games.core.States._
-import games.core.Actions._
-import games.core.Manifolds._
-import games.core.Coordinates._
-import games.core.Layouts._
-import games.core.Backgrounds._
-import games.core.Colour
+import games.core.{
+  Background, Colour, Game, InputAction,
+  Layout, Manifold, Piece, State, Vec2
+}
 
-class Chess(id: Int) extends Game[Vec2](id) {
+class Chess(val id: Int) extends Game {
   
   val name = "Chess"
   val players = Seq(2)
 
   sealed abstract class ChessPiece(name: String) extends Piece {
-    def colour = Seq("white", "black")(ownerId)
-    def texture = s"chess/${colour}_$name.png"
+    val colour = Seq("white", "black")(ownerId)
+    val texture = s"chess/${colour}_$name.png"
   }
 
   case class Pawn(ownerId: Int) extends ChessPiece("pawn")
@@ -26,11 +22,13 @@ class Chess(id: Int) extends Game[Vec2](id) {
   case class Queen(ownerId: Int) extends ChessPiece("queen")
   case class King(ownerId: Int) extends ChessPiece("king")
 
-  type StateT = State[ChessPiece, Vec, Null]
+  type VecT = Vec2
+  type StateT = State[Vec2, ChessPiece, Null]
 
-  val manifold = RectangleManifold(8, 8)
-  val layout = GridLayout
-  val background = Checkerboard(Colour.sourLemon, Colour.brightYarrow)
+  val manifold = Manifold.Rectangle(8, 8)
+  val layout = Layout.Grid
+  val background = Background.Checkerboard(
+    Colour.sourLemon, Colour.brightYarrow)
 
   def start(players: Int) = {
 
@@ -50,5 +48,14 @@ class Chess(id: Int) extends Game[Vec2](id) {
     } yield pos -> Pawn(pid)
 
     State((pieces ++ pawns).toMap)
+  }
+
+  def successors(state: StateT) = {
+
+    state.pieces.filter(_._2.isInstanceOf[Pawn]).map {
+      case (pos, pawn) =>
+        state.movePiece(pos, pos + Vec2.up)
+          .pushAction(InputAction.Move(pos, pos + Vec2.up))
+    }.toSeq
   }
 }

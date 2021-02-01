@@ -18,14 +18,14 @@ class BoardController @Inject()
     extends AbstractController(cc) with HasDatabaseConfigProvider[JdbcProfile]
     with UserHelper with ResourceHelper {
 
-  private val boardModel = new BoardModel(db)
-  private val userModel = new UserModel(db)
+  private val boards = new BoardModel(db)
+  private val users = new UserModel(db)
 
-  private val manager = system.actorOf(BoardManager.props(boardModel, userModel))
+  private val manager = system.actorOf(BoardManager.props(db))
   
   def create(gameId: Int) = Action.async { implicit request =>
     withUser { user =>
-      boardModel.createBoard(gameId, user.id) map { board =>
+      boards.createBoard(gameId, user.id) map { board =>
         Ok(board.asJson.toString)
       }
     }
@@ -33,13 +33,14 @@ class BoardController @Inject()
 
   def socket(boardId: String) = WebSocket.accept[String, String] { request =>
     ActorFlow.actorRef { out =>
-      BoardActor.props(out, manager, boardId)
+      val userId = request.session("userId").toInt
+      BoardActor.props(out, manager, boardId, userId)
     }
   }
 
   def game(boardId: String) = Action.async { implicit request =>
     withUser { user =>
-      getOr404(boardModel.getBoard(boardId)) { board =>
+      getOr404(boards.getBoard(boardId)) { board =>
         Future.successful(Ok(views.html.games.board(user, board.id)))
       }
     }

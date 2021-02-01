@@ -1,17 +1,17 @@
 package games.core
 
 import scala.math._
-import games.core.Coordinates._
+import games.core.{Vec, Vec2}
 
-object Manifolds {
+trait Manifold[V <: Vec] {
 
-  trait Manifold[C <: Coordinate] {
-
-    val positions: Seq[C]
-    def inBounds(pos: C): Boolean
+    val positions: Seq[V]
+    def inBounds(pos: V): Boolean
   }
 
-  case class RectangleManifold(width: Int, height: Int)
+object Manifold {
+
+  case class Rectangle(width: Int, height: Int)
       extends Manifold[Vec2] {
 
     val positions = for {
@@ -42,7 +42,7 @@ object Manifolds {
       (0 until height).map(y => Vec2(x, y))
   }
 
-  case class RowManifold(rows: Row*) extends Manifold[Vec2] {
+  case class Rows(rows: Row*) extends Manifold[Vec2] {
 
     val positions = for {
       (row, y) <- rows.zipWithIndex

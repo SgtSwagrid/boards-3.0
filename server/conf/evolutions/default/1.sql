@@ -58,7 +58,8 @@ CREATE TABLE Actions (
   Id SERIAL PRIMARY KEY,
   BoardId CHAR(5) NOT NULL,
   Action INT NOT NULL,
-  ActionOrder INT NOT NULL
+  ActionOrder INT NOT NULL,
+  TurnOrder INT NOT NULL
 );
 
 # --- !Downs

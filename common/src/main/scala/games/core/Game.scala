@@ -1,27 +1,43 @@
 package games.core
 
-import games.core.States._
-import games.core.Actions._
-import games.core.Manifolds._
-import games.core.Coordinates._
-import games.core.Layouts._
-import games.core.Backgrounds._
+import games.core.{
+  Background, Colour, InputAction,
+  Layout, Manifold, State, Vec
+}
 
-abstract class Game[C <: Coordinate](val id: Int) {
+abstract class Game {
 
+  val id: Int
   val name: String
   val players: Seq[Int]
   
-  type Vec = C
-  type StateT <: State[_ <: Piece, C, _]
+  type VecT <: Vec
+  type StateT <: State.VState[VecT]
+
+  type Place = InputAction.Place[VecT]
+  type Move = InputAction.Move[VecT]
+  type Destroy = InputAction.Destroy[VecT]
   
-  val manifold: Manifold[C]
-  val layout: Layout[C]
-  val background: Background[C]
+  val manifold: Manifold[VecT]
+  val layout: Layout[VecT]
+  val background: Background[VecT]
 
-  def start(players: Int): StateT
-}
+  def start(players: Int):  StateT
+  
+  def successors(state: StateT): Seq[StateT]
 
-object Game {
-  type AnyGame = Game[_ <: Coordinate]
+  def actions(state: StateT) =
+    successors(state).flatMap(_.action)
+
+  def takeAction(state: StateT, action: InputAction) =
+    successors(state).find(_.action == Some(action))
+
+  def validateAction(state: StateT, action: InputAction) =
+    takeAction(state, action).isDefined
+
+  def moves(state: StateT, pos: VecT): Seq[Move] =
+    actions(state).filter {
+      case InputAction.Move(from, to) => from == pos
+      case _ => false
+    }.map(_.asInstanceOf[Move])
 }

@@ -1,26 +1,26 @@
 package games
 
-import games.core.Game
-import games.core.States._
-import games.core.Actions._
-import games.core.Manifolds._
-import games.core.Coordinates._
-import games.core.Layouts._
-import games.core.Backgrounds._
-import games.core.Colour
+import games.core.{
+  Background, Colour, Game, InputAction,
+  Layout, Manifold, Piece, State, Vec2
+}
 
-class TicTacToe(id: Int) extends Game[Vec2](id) {
+class TicTacToe(val id: Int) extends Game {
 
   val name = "Tic Tac Toe"
   val players = Seq(2)
 
   sealed trait TicTacToePiece extends Piece
 
-  type StateT = State[TicTacToePiece, Vec, Null]
+  type VecT = Vec2
+  type StateT = State[VecT, TicTacToePiece, Null]
   
-  val manifold = RectangleManifold(3, 3)
-  val layout = GridLayout
-  val background = Checkerboard(Colour.hintOfPensive, Colour.lynxWhite)
+  val manifold = Manifold.Rectangle(3, 3)
+  val layout = Layout.Grid
+  val background = Background.Checkerboard(
+    Colour.hintOfPensive, Colour.lynxWhite)
 
   def start(players: Int) = State()
+
+  def successors(state: StateT) = Seq(state)
 }

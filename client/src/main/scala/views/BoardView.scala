@@ -1,27 +1,37 @@
 package views.components
 
-import org.scalajs.dom._, org.scalajs.dom.html
+import org.scalajs.dom._
+import org.scalajs.dom.html
 import scala.scalajs.js.annotation.JSExportTopLevel
-import io.circe._, io.circe.generic.auto._, io.circe.parser._, io.circe.syntax._
+
 import slinky.core.{Component, StatelessComponent}
 import slinky.core.facade.ReactElement
 import slinky.core.annotations.react
-import slinky.web.ReactDOM, slinky.web.html._
-import models.{Board, Player, User, Participant}
-import models.protocols.BoardProtocol._
+import slinky.web.ReactDOM
+import slinky.web.html._
+
+import io.circe._, io.circe.generic.auto._, io.circe.parser._, io.circe.syntax._
+
 import views.components.ButtonComponent
-import games.core.States.AnyState
+import views.components.board.BoardComponent
+
+import models.{Board, Player, User, Participant}
+import games.core.InputAction
+import games.core.State.AnyState
+import models.protocols.BoardProtocol._
 
 object BoardView {
 
-  case class BoardSession(user: User, player: Option[Player], socket: WebSocket) {
-    def owner = player.map(_.isOwner).getOrElse(false)
+  case class BoardSession (
+    user: User,
+    player: Option[Player],
+    socket: WebSocket
+  ) {
+    def owner = player.exists(_.isOwner)
   }
 
   lazy val socketRoute = document.getElementById("socketRoute")
     .asInstanceOf[html.Input].value.replace("http", "ws")
-
-  val buttonClass = "btn yellow darken-2 black-text waves-effect block"
 
   @JSExportTopLevel("board")
   def board() = {
@@ -35,12 +45,12 @@ object BoardView {
     val socket = new WebSocket(socketRoute)
 
     ReactDOM.render (
-      StateComponent(boardId, user, socket),
+      GameComponent(boardId, user, socket),
       document.getElementById("root")
     )
   }
 
-  @react class StateComponent extends Component {
+  @react class GameComponent extends Component {
 
     case class Props (
       boardId: String,
@@ -52,14 +62,17 @@ object BoardView {
       board: Option[Board],
       players: Seq[Participant],
       player: Option[Player],
-      state: Option[AnyState]
+      gameState: Option[AnyState]
     )
 
     def initialState = State(None, Seq(), None, None)
 
-    def render() = state.board map { board =>
-      GameComponent(board, state.players, board.game.start(state.players.size),
-        BoardSession(props.user, state.player, props.socket)
+    def session = BoardSession(props.user, state.player, props.socket)
+
+    def render() = (state.board zip state.gameState) map {
+      case (board, gameState) => div (
+        SidebarComponent(board, state.players, session),
+        BoardComponent(board, gameState, session)
       )
     }
 
@@ -68,36 +81,40 @@ object BoardView {
         decode[BoardResponse](e.data.toString).toOption.get match {
 
           case SetBoard(board) =>
-            setState(s => s.copy(board = board))
+            setState(_.copy (
+              board = board,
+              gameState = board.map(_.game.start(state.players.size)))
+            )
 
           case SetPlayers(players) =>
-            setState(s => s.copy (
+            setState(_.copy (
               players = players,
               player = players.find(_.user.id == props.user.id).map(_.player)
             ))
 
-          case PushActions(actions) =>
-            {}
+          case PushActions(actions) => {
+
+            (state.board zip state.gameState) foreach {
+              case (board, gameState) =>
+
+                val gameStateT = gameState.asInstanceOf[board.game.StateT]
+
+                val newState = actions.foldLeft(gameStateT) { 
+                  (gameState, action) =>
+
+                    val states = board.game.successors(gameState)
+
+                    if (states.isDefinedAt(action.actionId)
+                        && gameState.turn == action.turn)
+                      states(action.actionId)
+                    else gameState
+                }
+
+                setState(_.copy(gameState = Some(newState)))
+            }
+          }
         }
       }
-  }
-
-  @react class GameComponent extends Component {
-
-    case class Props (
-      board: Board,
-      players: Seq[Participant],
-      state: AnyState,
-      session: BoardSession
-    )
-
-    type State = Unit
-    def initialState = ()
-
-    def render() = div (
-      SidebarComponent(props.board, props.players, props.session),
-      BoardComponent(props.board, props.state)
-    )
   }
 
   @react class SidebarComponent extends Component {

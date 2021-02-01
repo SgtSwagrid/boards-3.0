@@ -2,11 +2,10 @@ package games.core
 
 import games._
 import models.User
-import games.core.Game.AnyGame
 
 object Manifest {
   
-  final val Games = List[AnyGame](
+  final val Games = List[Game](
     new TicTacToe(0),
     new Chess(1)
   )

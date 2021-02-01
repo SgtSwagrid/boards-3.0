@@ -2,57 +2,86 @@ package actors
 
 import scala.concurrent.ExecutionContext
 import scala.collection.mutable
+import slick.jdbc.MySQLProfile.api.Database
 import akka.actor.{Actor, ActorRef, Props}
 import models.{BoardModel, UserModel, Participant}
 import models.protocols.BoardProtocol._
 
-class BoardManager(boardModel: BoardModel, userModel: UserModel)
+class BoardManager(db: Database)
     (implicit ec: ExecutionContext) extends Actor {
+
+  private val boards = new BoardModel(db)
+  private val users = new UserModel(db)
 
   private val actors = mutable.Map[String, List[ActorRef]]()
 
-  def receive = {
-
-    case (actor: ActorRef, NewSpectator(boardId)) => {
-      actors += boardId -> (actor +: actors.get(boardId).getOrElse(Nil))
-      boardModel.getBoard(boardId).foreach(actor ! SetBoard(_))
-      boardModel.getParticipants(boardId).map(actor ! SetPlayers(_))
-    }
-
-    case (actor: ActorRef, JoinGame(boardId, userId)) =>
-      for {
-        _ <- boardModel.joinBoard(boardId, userId)
-        participants <- boardModel.getParticipants(boardId)
-      } broadcast(boardId, SetPlayers(participants))
+  def receive = { case (actor: ActorRef, userId: Int, msg: BoardRequest) =>
     
-    case (actor: ActorRef, RemovePlayer(boardId, playerId)) => 
-      for {
-        _ <- boardModel.removePlayer(boardId, playerId)
-        participants <- boardModel.getParticipants(boardId)
-      } broadcast(boardId, SetPlayers(participants))
+    for {
+      board <- boards.getBoard(msg.boardId)
+      player <- boards.getPlayerByUser(msg.boardId, userId)
+    } msg match {
 
-    case (actor: ActorRef, PromotePlayer(boardId, playerId)) =>
-      for {
-        promoted <- boardModel.promotePlayer(boardId, playerId)
-        participants <- boardModel.getParticipants(boardId)
-      } if (promoted) broadcast(boardId, SetPlayers(participants))
+      case NewSpectator(boardId) => {
+        actors += boardId -> (actor +: actors.get(boardId).getOrElse(Nil))
+        boards.getBoard(boardId).foreach(actor ! SetBoard(_))
+        boards.getParticipants(boardId).map(actor ! SetPlayers(_))
+        boards.getActions(boardId).map(a => actor !
+          PushActions(a.map(a => ActionId(a.action, a.turnOrder))))
+      }
 
-    case (actor: ActorRef, DemotePlayer(boardId, playerId)) =>
-      for {
-        demoted <- boardModel.demotePlayer(boardId, playerId)
-        participants <- boardModel.getParticipants(boardId)
-      } if (demoted) broadcast(boardId, SetPlayers(participants))
-    
-    case (actor: ActorRef, DeleteGame(boardId)) => {
-      boardModel.deleteBoard(boardId)
-      broadcast(boardId, SetBoard(None))
-    }
+      case JoinGame(boardId, joiningId) =>
+        if (userId == joiningId)
+          for {
+            _ <- boards.joinBoard(boardId, joiningId)
+            participants <- boards.getParticipants(boardId)
+          } broadcast(boardId, SetPlayers(participants))
+      
+      case RemovePlayer(boardId, playerId) =>
+        if (player.exists(p => p.isOwner || p.id == playerId))
+          for {
+            _ <- boards.removePlayer(boardId, playerId)
+            participants <- boards.getParticipants(boardId)
+          } broadcast(boardId, SetPlayers(participants))
 
-    case (actor: ActorRef, StartGame(boardId)) => {
-      for {
-        started <- boardModel.startGame(boardId)
-        board <- boardModel.getBoard(boardId)
-      } if (started) broadcast(boardId, SetBoard(board))
+      case PromotePlayer(boardId, playerId) =>
+        if (player.exists(_.isOwner))
+          for {
+            promoted <- boards.promotePlayer(boardId, playerId)
+            participants <- boards.getParticipants(boardId)
+          } broadcast(boardId, SetPlayers(participants))
+
+      case DemotePlayer(boardId, playerId) =>
+        if (player.exists(_.isOwner))
+          for {
+            demoted <- boards.demotePlayer(boardId, playerId)
+            participants <- boards.getParticipants(boardId)
+          } broadcast(boardId, SetPlayers(participants))
+      
+      case DeleteGame(boardId) => {
+        if (player.exists(_.isOwner)) {
+          boards.deleteBoard(boardId)
+          broadcast(boardId, SetBoard(None))
+        }
+      }
+
+      case StartGame(boardId) => {
+        if (player.exists(_.isOwner))
+          for {
+            started <- boards.startGame(boardId)
+            board <- boards.getBoard(boardId)
+          } if (started) broadcast(boardId, SetBoard(board))
+      }
+
+      case TakeAction(boardId, actionId) => {
+        player foreach { player =>
+          if (board.exists(_.ongoing)) {
+            boards.takeAction(boardId, actionId, player.turnOrder)
+            val action = ActionId(actionId, player.turnOrder)
+            broadcast(boardId, PushActions(Seq(action)))
+          }
+        }
+      }
     }
   }
 
@@ -63,7 +92,6 @@ class BoardManager(boardModel: BoardModel, userModel: UserModel)
 
 object BoardManager {
 
-  def props(boardModel: BoardModel, userModel: UserModel)
-      (implicit ec: ExecutionContext) =
-    Props(new BoardManager(boardModel, userModel))
+  def props(db: Database)(implicit ec: ExecutionContext) =
+    Props(new BoardManager(db))
 }

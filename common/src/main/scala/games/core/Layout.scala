@@ -1,17 +1,17 @@
 package games.core
 
-import games.core.Coordinates._
+import games.core.{Vec, Vec2}
 
-object Layouts {
+trait Layout[V <: Vec] {
+  
+  def position(pos: V): Vec2
+  def size(pos: V): Vec2
+  def shape(pos: V): Layout.Shape
+}
 
-  trait Layout[C <: Coordinate] {
-    
-    def position(pos: C): Vec2
-    def size(pos: C): Vec2
-    def shape(pos: C): Shape
-  }
+object Layout {
 
-  case object GridLayout extends Layout[Vec2] {
+  case object Grid extends Layout[Vec2] {
 
     def position(pos: Vec2) = pos
     def size(pos: Vec2) = Vec2.unit
