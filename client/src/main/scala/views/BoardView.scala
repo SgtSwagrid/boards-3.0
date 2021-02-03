@@ -16,7 +16,6 @@ import views.components.ButtonComponent
 import views.components.board.BoardComponent
 
 import models.{Board, Player, User, Participant}
-import games.core.InputAction
 import games.core.State.AnyState
 import models.protocols.BoardProtocol._
 
@@ -43,6 +42,7 @@ object BoardView {
       .asInstanceOf[html.Input].value).toOption.get
 
     val socket = new WebSocket(socketRoute)
+    socket.onclose = _ => window.location.reload()
 
     ReactDOM.render (
       GameComponent(boardId, user, socket),

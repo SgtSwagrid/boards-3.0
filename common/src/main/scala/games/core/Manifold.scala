@@ -11,8 +11,34 @@ trait Manifold[V <: Vec] {
 
 object Manifold {
 
-  case class Rectangle(width: Int, height: Int)
-      extends Manifold[Vec2] {
+  trait Rectangular extends Manifold[Vec2] {
+
+    def line(start: Vec2, end: Vec2) = {
+      val dir = start directionTo end
+      val size = (start stepsTo end) + 1
+      ray(start, dir, size)
+    }
+
+    def ray(start: Vec2, dir: Vec2): Seq[Vec2] = {
+      Iterator.iterate(start + dir)(_ + dir).takeWhile(inBounds).toSeq
+    }
+
+    def ray(start: Vec2, dir: Vec2, size: Int): Seq[Vec2] = {
+      ray(start, dir).take(size)
+    }
+
+    def rayUntil(start: Vec2, dir: Vec2, end: Vec2 => Boolean): Seq[Vec2] = {
+      ray(start, dir).takeWhile(!end(_))
+    }
+
+    def rayTo(start: Vec2, dir: Vec2, end: Vec2 => Boolean): Seq[Vec2] = {
+      ray(start, dir).span(!end(_)) match {
+        case (prefix, suffix) => prefix ++ suffix.headOption
+      }
+    }
+  }
+
+  case class Rectangle(width: Int, height: Int) extends Rectangular {
 
     val positions = for {
       x <- 0 until width
@@ -42,7 +68,7 @@ object Manifold {
       (0 until height).map(y => Vec2(x, y))
   }
 
-  case class Rows(rows: Row*) extends Manifold[Vec2] {
+  case class Rows(rows: Row*) extends Rectangular {
 
     val positions = for {
       (row, y) <- rows.zipWithIndex

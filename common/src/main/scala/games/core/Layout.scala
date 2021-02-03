@@ -14,7 +14,7 @@ object Layout {
   case object Grid extends Layout[Vec2] {
 
     def position(pos: Vec2) = pos
-    def size(pos: Vec2) = Vec2.unit
+    def size(pos: Vec2) = Vec2(1, 1)
     def shape(pos: Vec2) = Rectangle
   }
 

@@ -1,7 +1,7 @@
 package games
 
 import games.core.{
-  Background, Colour, Game, InputAction,
+  Action, Background, Colour, Game,
   Layout, Manifold, Piece, State, Vec2
 }
 

@@ -1,7 +1,7 @@
 package games
 
 import games.core.{
-  Background, Colour, Game, InputAction,
+  Action, Background, Colour, Game,
   Layout, Manifold, Piece, State, Vec2
 }
 
@@ -11,7 +11,7 @@ class Chess(val id: Int) extends Game {
   val players = Seq(2)
 
   sealed abstract class ChessPiece(name: String) extends Piece {
-    val colour = Seq("white", "black")(ownerId)
+    val colour = byOwner("white", "black")
     val texture = s"chess/${colour}_$name.png"
   }
 
@@ -32,30 +32,63 @@ class Chess(val id: Int) extends Game {
 
   def start(players: Int) = {
 
-    def home(x: Int, pid: Int) = Seq (
+    def pieces(pid: Int) = Seq (
       Rook(pid), Knight(pid), Bishop(pid), King(pid),
       Queen(pid), Bishop(pid), Knight(pid), Rook(pid)
-    )(x)
+    )
 
-    val pieces = for {
-      (pid, y) <- Seq((0, 0), (1, 7))
-      pos <- manifold.row(y)
-    } yield pos -> home(pos.x, pid)
-
-    val pawns = for {
-      (pid, y) <- Seq((0, 1), (1, 6))
-      pos <- manifold.row(y)
-    } yield pos -> Pawn(pid)
-
-    State((pieces ++ pawns).toMap)
+    new StateT()
+      .withPlayers(2)
+      .addPieces(manifold.row(0), pieces(0))
+      .addPieces(manifold.row(7), pieces(1))
+      .addPieces(manifold.row(1), List.fill(8)(Pawn(0)))
+      .addPieces(manifold.row(6), List.fill(8)(Pawn(1)))
   }
 
   def successors(state: StateT) = {
 
-    state.pieces.filter(_._2.isInstanceOf[Pawn]).map {
-      case (pos, pawn) =>
-        state.movePiece(pos, pos + Vec2.up)
-          .pushAction(InputAction.Move(pos, pos + Vec2.up))
-    }.toSeq
+    val actions = state.pieceSeq.flatMap {
+
+      case pos -> Pawn(state.turn) => {
+
+        val home = pos.y == state.byPlayer(1, 6)
+        val dir = state.byPlayer(Vec2.N, Vec2.S)
+
+        val forward = Some(pos + dir)
+          .filter(state.empty)
+
+        val double = Option.when(home)(pos + (dir * 2))
+          .filter(state.empty)
+
+        val captures = Seq(Vec2.W, Vec2.E)
+          .map(pos + dir + _).filter(state.enemy)
+
+        (forward ++ double ++ captures)
+          .map(Action.Move(pos, _))
+      }
+
+      case pos -> Rook(state.turn) =>
+        Vec2.orthogonal
+          .flatMap(manifold.rayTo(pos, _, state.occupied))
+          .map(Action.Move(pos, _))
+
+      case pos -> Bishop(state.turn) =>
+        Vec2.diagonal
+          .flatMap(manifold.rayTo(pos, _, state.occupied))
+          .map(Action.Move(pos, _))
+
+      case pos -> Queen(state.turn) =>
+        Vec2.cardinal
+          .flatMap(manifold.rayTo(pos, _, state.occupied))
+          .map(Action.Move(pos, _))
+
+      case _ => None
+    } 
+
+    actions
+      .filter(_.inBounds(manifold))
+      .filter(!_.selfCapture(state))
+      .map(_.actuate(state))
+      .map(_.endTurn())
   }
 }

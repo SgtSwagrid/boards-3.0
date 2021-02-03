@@ -13,7 +13,7 @@ import io.circe._, io.circe.generic.auto._, io.circe.parser._, io.circe.syntax._
 
 import models.Board
 import models.protocols.BoardProtocol._
-import games.core.{Colour, Game, InputAction, State, Vec, Vec2}
+import games.core.{Action, Colour, Game, State, Vec, Vec2}
 import games.core.State.AnyState
 import views.components.BoardView.BoardSession
 import views.components.board.ImageCache
@@ -29,8 +29,8 @@ import views.components.board.ImageCache
   )
 
   case class State (
-    canvasSize: Vec2 = Vec2.zero,
-    cursor: Vec2 = Vec2.zero,
+    canvasSize: Vec2 = Vec2.Zero,
+    cursor: Vec2 = Vec2.Zero,
     selected: Option[Vec] = None,
     drag: Boolean = false
   )
@@ -111,7 +111,7 @@ import views.components.board.ImageCache
 
   private def tryMove(from: VecT, to: VecT) = {
 
-    val move = InputAction.Move(from, to)
+    val move = Action.Move(from, to)
     val valid = game.validateAction(gameState, move)
       
     if (valid) {
@@ -122,7 +122,7 @@ import views.components.board.ImageCache
     valid
   }
 
-  private def takeAction(action: InputAction) {
+  private def takeAction(action: Action) {
 
     val actionId = game.actions(gameState).indexOf(action)
     val request: BoardRequest = TakeAction(props.board.id, actionId)
@@ -147,7 +147,7 @@ import views.components.board.ImageCache
     draw(scene)
   }
 
-  private def draw(scene: SceneT) = {
+  private def draw(scene: SceneT): Unit = {
 
     scene.locations.foreach(drawTile(scene, _))
 
@@ -174,6 +174,7 @@ import views.components.board.ImageCache
       if (!(selected == Some(loc) && state.drag)) {
 
         val image = images.image(piece.texture)
+        image.onload = e => draw(scene)
         context.drawImage(image, x, y, width, height)
       }
     }
