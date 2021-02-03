@@ -2,10 +2,10 @@ package models
 
 import java.time.LocalDateTime
 
-case class Friendship (
+case class Friend (
   id: Int = -1,
-  userId1: Int,
-  userId2: Int,
+  user1Id: Int,
+  user2Id: Int,
   status: Int, 
   date: LocalDateTime,
 ) {

@@ -93,8 +93,8 @@ class UserController @Inject()
 
   def friendRequest(receiverId: Int) = Action.async { implicit request =>
     withUser { user => 
-      userModel.createFriendship(user.id, receiverId) map { friendship =>
-        Ok(friendship.asJson.toString)
+      userModel.createFriend(user.id, receiverId) map { friend =>
+        Ok(friend.asJson.toString)
       }
     }
   }

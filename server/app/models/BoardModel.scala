@@ -11,6 +11,7 @@ import models.{Board, Player, User}
 import games.core.Manifest.Games
 import slick.dbio.DBIOAction
 import java.time.LocalDateTime
+// import models.UserModel
 import models.protocols.SearchProtocol._
 import models.protocols.BoardProtocol._
 
@@ -166,7 +167,7 @@ class BoardModel(db: Database)(implicit ec: ExecutionContext) {
     db.run(Boards.filter(_.id === boardId).delete).map(_ > 0)
   }
 
-  def searchBoards(query: SearchQuery[BoardFilter], userId: Int):
+  def searchBoards(query: SearchQuery[BoardFilter]):
       Future[SearchResponse[Board]] = {
     
     val boards = query.filters.foldLeft[BoardsQuery] (Boards)
@@ -174,13 +175,23 @@ class BoardModel(db: Database)(implicit ec: ExecutionContext) {
 
         case AllBoards => q
 
-        case FriendsBoards => q.filter(_.id === "") //TODO
-
-        case MyBoards => q.filter { board =>
+        case MyBoards(userId: Int) => q.filter { board =>
           Players
             .filter(_.userId === userId)
             .filter(_.boardId === board.id)
             .exists
+        }
+
+        case FriendsBoards(userId: Int) => q.filter { board =>
+
+          val friends = users.DBQuery.friendsByUser(userId)
+
+          friends.filter { friend => 
+            Players
+              .filter(_.userId === friend.id)
+              .filter(_.boardId === board.id)
+              .exists
+          }.exists
         }
 
         case MostRecent => q.sortBy(_.modified.reverse)

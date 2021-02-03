@@ -12,7 +12,7 @@ import models.{UserModel, BoardModel, SearchModel}
 import controllers.helpers.{UserHelper, JsonHelper}
 import models.protocols.SearchProtocol._
 import models.protocols.BoardProtocol._
-import io.circe.generic.auto._, io.circe.syntax._
+import io.circe.generic.auto._, io.circe.syntax._, io.circe._, io.circe.parser._
 
 @Singleton
 class MenuController @Inject()
@@ -38,7 +38,7 @@ class MenuController @Inject()
   def browseQuery() = Action.async { implicit request =>
     withUser { user =>
       withJson[SearchQuery[BoardFilter]] { query =>
-        boards.searchBoards(query, user.id)
+        boards.searchBoards(query)
           .map(r => Ok(r.asJson.toString))
       }
     }

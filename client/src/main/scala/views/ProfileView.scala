@@ -33,8 +33,10 @@ object ProfileView {
   def profile() = {
 
     val allUsers = Manifest.Users
-    val user = decode[User](document.getElementById("user").asInstanceOf[html.Input].value).toOption.get
-    val profileUser = decode[User](document.getElementById("profileUser").asInstanceOf[html.Input].value).toOption.get
+    val user = decode[User](document.getElementById("user")
+      .asInstanceOf[html.Input].value).toOption.get
+    val profileUser = decode[User](document.getElementById("profileUser")
+      .asInstanceOf[html.Input].value).toOption.get
 
     ReactDOM.render (
       //MenuComponent(allUsers, user),
