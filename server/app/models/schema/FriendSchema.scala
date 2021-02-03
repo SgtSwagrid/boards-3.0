@@ -3,14 +3,14 @@ package models.schema
 import slick.jdbc.MySQLProfile.api._
 import slick.lifted.ProvenShape
 import java.time.LocalDateTime
-import models.Friendship
+import models.Friend
 import UserSchema.Users
 
-object FriendshipSchema {
+object FriendSchema {
   
-  lazy val Friendships = TableQuery[Friendships]
+  lazy val Friends = TableQuery[Friends]
 
-  class Friendships(tag: Tag) extends Table[Friendship](tag, "Friendships") {
+  class Friends(tag: Tag) extends Table[Friend](tag, "Friends") {
 
     def id = column[Int]("Id", O.PrimaryKey, O.AutoInc)
     def user1Id = column[Int]("User1Id")
@@ -24,8 +24,8 @@ object FriendshipSchema {
     def user2Fk = (foreignKey("User2Fk", user2Id, Users)
       (_.id, onDelete=ForeignKeyAction.Cascade))
 
-    override val * : ProvenShape[Friendship] = {
-      (id, user1Id, user2Id, status, date) <> (Friendship.tupled, Friendship.unapply)
+    override val * : ProvenShape[Friend] = {
+      (id, user1Id, user2Id, status, date) <> (Friend.tupled, Friend.unapply)
     }
   }
 }

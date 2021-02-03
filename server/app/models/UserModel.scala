@@ -10,9 +10,9 @@ import models.protocols.UserProtocol.UserFilter
 import models.protocols.SearchProtocol.SearchResponse
 import models.protocols.UserProtocol.NameContainsSubstring
 import models.protocols.UserProtocol.NameAlphabetical
-import models.Friendship
+import models.Friend
 import io.circe.Decoder.state
-import models.schema.FriendshipSchema.Friendships
+import models.schema.FriendSchema.Friends
 import akka.http.javadsl.model.DateTime
 import java.time.LocalDateTime
 
@@ -24,7 +24,7 @@ class UserModel(db: Database)(implicit ec: ExecutionContext) {
   private val search = new SearchModel(db)
 
   def getUser(userId: Int): Future[Option[User]] = {
-    db.run(userById(userId))
+    db.run(DBAction.getUserById(userId))
   }
   
   def createUser(registration: Registration):
@@ -35,14 +35,14 @@ class UserModel(db: Database)(implicit ec: ExecutionContext) {
       case Left(error) => Future.successful(Left(error))
       case Right(RegisterForm(Username(username), Password(password))) => {
 
-       db.run(userByName(username)) flatMap {
+       db.run(DBAction.getUserByName(username)) flatMap {
 
           case Some(_) => Future.successful(Left(UsernameTaken))
           case None => {
 
             val hash = BCrypt.hashpw(password, BCrypt.gensalt())
             db.run(Users += User(-1, username, hash))
-              .flatMap(_ => db.run(userByName(username))
+              .flatMap(_ => db.run(DBAction.getUserByName(username))
                 .map(user => Right(user.get)))
           }
         }
@@ -91,23 +91,70 @@ class UserModel(db: Database)(implicit ec: ExecutionContext) {
   }
 
   def getUserByName(username: String): Future[Option[User]] = {
-    db.run(userByName(username))
+    db.run(DBAction.getUserByName(username))
   }
 
-  def userById(userId: Int) = {
-    Users.filter(_.id === userId).result.headOption
+  private[models] object DBQuery {
+
+    def userById(userId: Int) =
+      Users.filter(_.id === userId)
+
+    def userByName(username: String) =
+      Users.filter(_.username === username)
+
+    def friendsByUserByStatus(userId: Int, friendStatus: Int) = 
+      Users.filter { user =>
+        Friends.filter { friend =>
+          ((friend.user1Id === userId && friend.user2Id === user.id) ||
+          (friend.user2Id === userId && friend.user1Id === user.id)) && 
+          (friend.status === friendStatus)
+        }.exists
+      }
+
+    def pendingFriendsByUser(userId: Int) =
+      friendsByUserByStatus(userId, 0)
+
+    def friendsByUser(userId: Int) =
+      friendsByUserByStatus(userId, 1)
+
+    def declinedFriendsByUser(userId: Int) =
+      friendsByUserByStatus(userId, 2)
+
+    def friendById(friendId: Int) = 
+      Friends.filter(_.id === friendId)
+
   }
 
-  def userByName(username: String) = {
-    Users.filter(_.username === username).result.headOption
+  private[models] object DBAction {
+
+    def getUserById(userId: Int) = 
+      DBQuery.userById(userId).result.headOption
+
+    def getUserByName(username: String) =
+      DBQuery.userByName(username).result.headOption
+
+    def getFriendsByUser(userId: Int) =
+      DBQuery.friendsByUser(userId).result
+
+    def getPendingFriendsByUser(userId: Int) =
+      DBQuery.pendingFriendsByUser(userId).result
   }
 
-  def createFriendship(senderId: Int, receiverId: Int): Future[Friendship] = {
+  
+  def createFriend(senderId: Int, receiverId: Int): Future[Friend] = {
 
-    val friendship = Friendship(userId1=senderId, userId2=receiverId, 
+    val friend = Friend(user1Id=senderId, user2Id=receiverId, 
       status=0, date=LocalDateTime.now())
     
-    db.run(Friendships += friendship).map(_ => friendship)
-      
+    db.run(Friends += friend).map(_ => friend)
   }
+
+  def friendsOfUser(userId: Int) = {
+    db.run(DBAction.getFriendsByUser(userId))
+  }
+  
+  def friendRequestsOfuser(userId: Int) = {
+    db.run(DBAction.getPendingFriendsByUser(userId))
+  }
+
 }

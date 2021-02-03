@@ -1,15 +1,15 @@
 package views
 
+import org.scalajs.dom._, org.scalajs.dom.html
 import scala.scalajs.js.annotation.JSExportTopLevel
 import slinky.core.{Component, StatelessComponent}
 import slinky.core.facade.ReactElement
 import slinky.core.annotations.react
-import org.scalajs.dom._
 import slinky.web.html._
 import slinky.web.ReactDOM
-import io.circe.generic.auto._, io.circe.syntax._
+import io.circe._, io.circe.generic.auto._, io.circe.parser._, io.circe.syntax._
 import views.components.Tabs, views.components.Tabs.Tab
-import models.Board
+import models.{Board, User}
 import models.protocols.SearchProtocol._
 import models.protocols.BoardProtocol._
 import views.components.menu.PaginationComponent
@@ -24,15 +24,18 @@ object BrowseView {
   @JSExportTopLevel("browse")
   def browse() = {
     
+    val user = decode[User](document.getElementById("user")
+      .asInstanceOf[html.Input].value).toOption.get
+
     ReactDOM.render (
-      BrowseComponent(),
+      BrowseComponent(user),
       document.getElementById("root")
     )
   }
 
   @react class BrowseComponent extends Component {
 
-    type Props = Unit
+    case class Props(user: User)
     case class State(tab: Int)
     def initialState = State(0)
 
@@ -45,11 +48,11 @@ object BrowseView {
         ), Tab (
           "Friend's Boards",
           "/assets/img/followers.svg",
-          BoardListComponent(FriendsBoards)
+          BoardListComponent(FriendsBoards(props.user.id))
         ), Tab (
           "My Boards",
           "/assets/img/user.svg",
-          BoardListComponent(MyBoards)
+          BoardListComponent(MyBoards(props.user.id))
         )
       )
     )

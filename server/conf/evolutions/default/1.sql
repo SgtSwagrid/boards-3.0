@@ -20,7 +20,7 @@ CREATE TABLE Users (
   Password TEXT NOT NULL
 );
 
-CREATE TABLE Friendships (
+CREATE TABLE Friends (
   Id SERIAL PRIMARY KEY,
   User1Id BIGINT UNSIGNED NOT NULL,
   User2Id BIGINT UNSIGNED NOT NULL,
@@ -64,9 +64,9 @@ CREATE TABLE Actions (
 
 # --- !Downs
 
-DROP TABLE Boards;
-DROP TABLE Users;
-DROP TABLE Friendships;
-DROP TABLE Invites;
-DROP TABLE Players;
 DROP TABLE Actions;
+DROP TABLE Players;
+DROP TABLE Invites;
+DROP TABLE Friends;
+DROP TABLE Users;
+DROP TABLE Boards;
