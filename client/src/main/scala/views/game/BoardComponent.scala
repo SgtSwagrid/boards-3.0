@@ -54,11 +54,12 @@ import games.core.State.AnyState
   private def gameState = props.gameState.asInstanceOf[HistoryT]
 
   private type VecT = game.VecT
-  //private type StateT = game.StateT
   private type HistoryT = game.HistoryT
   private type SceneT = Scene[VecT]
   
   private def selected = state.selected.asInstanceOf[Option[VecT]]
+
+  private def myTurn = props.session.player.exists(_.turnOrder == props.gameState.state.turn)
 
   override def componentDidMount() = {
 
@@ -79,8 +80,7 @@ import games.core.State.AnyState
 
     val scene = new SceneT(game, gameState.state, layout, state.canvasSize)
 
-    if (props.session.player.exists(_.turnOrder == gameState.state.turn)
-        && props.board.ongoing) {
+    if (myTurn && props.board.ongoing) {
 
       val moved = (selected zip scene.location(pos)) exists {
         case (from, to) => tryMove(from, to)
@@ -94,6 +94,7 @@ import games.core.State.AnyState
 
         setState(_.copy(selected = loc, drag = true))
       }
+      autoSelect()
     }
   }
 
@@ -104,7 +105,7 @@ import games.core.State.AnyState
     val scene = new SceneT(game, gameState.state, layout, state.canvasSize)
 
     (selected zip scene.location(pos)) foreach {
-      case (from, to) =>  tryMove(from, to)
+      case (from, to) => tryMove(from, to)
     }
   }
 
@@ -136,12 +137,28 @@ import games.core.State.AnyState
     Vec2(x, y)
   }
 
+  private def autoSelect() = {
+
+    game.actions(gameState).toSeq match {
+      case Action.Move(from, _) :: actions =>
+        if (actions.forall {
+          case Action.Move(`from`, _) => true
+          case _ => false
+        }) setState(_.copy(selected = Some(from)))
+      case _ => ()
+    }
+  }
+
   override def componentDidUpdate(prevProps: Props, prevState: State) = {
+    
+    if (props != prevProps && props.board.ongoing && myTurn) autoSelect()
 
     val scene = new SceneT(game, gameState.state, layout, state.canvasSize)
 
     canvas.width = canvas.clientWidth
     canvas.height = canvas.clientHeight
+
+    List().nonEmpty
 
     draw(scene)
   }
@@ -190,19 +207,19 @@ import games.core.State.AnyState
 
       if (gameState.state.pieces.isDefinedAt(move.to)) {
 
-        context.strokeStyle = Colour.fusionRed.hex
+        context.strokeStyle = Colour.naval.hex
         context.globalAlpha = 0.8
-        context.lineWidth = size * 0.25
+        context.lineWidth = size * 0.2
         context.beginPath()
         context.arc(x, y, size * 0.8, 0, 2 * Math.PI)
         context.stroke()
 
       } else {
 
-        context.fillStyle = Colour.fusionRed.hex
+        context.fillStyle = Colour.naval.hex
         context.globalAlpha = 0.8
         context.beginPath()
-        context.arc(x, y, size * 0.4, 0, 2 * Math.PI)
+        context.arc(x, y, size * 0.35, 0, 2 * Math.PI)
         context.fill()
       }
     }

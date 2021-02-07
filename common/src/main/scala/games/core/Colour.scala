@@ -37,8 +37,12 @@ object Colour {
   val brightYarrow = hex("#FDBC6E")
 
   // British Palette
+  val searbrook = hex("#487EB0")
+  val naval = hex("#40739E")
   val lynxWhite = hex("#F5F6FA")
   val hintOfPensive = hex("#DCDDE1")
+  val blueNights = hex("#353B48")
+  val chainGangGrey = hex("#718093")
 
   // German Palette
   val fusionRed = hex("#FC5C65")
