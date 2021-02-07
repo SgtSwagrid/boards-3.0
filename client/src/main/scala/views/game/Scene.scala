@@ -6,11 +6,11 @@ import slinky.web.html.height
 class Scene[V <: Vec] (
   val game: Game,
   val state: State.AnyState,
+  val layout: Layout[V],
   val canvasSize: Vec2
 ) {
 
   val manifold = game.manifold.asInstanceOf[Manifold[V]]
-  val layout = game.layout.asInstanceOf[Layout[V]]
   val background = game.background.asInstanceOf[Background[V]]
 
   val locations = manifold.positions

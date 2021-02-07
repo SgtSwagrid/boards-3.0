@@ -21,8 +21,8 @@ abstract class Game {
   type Destroy = Action.Destroy[VecT]
   
   val manifold: Manifold[VecT]
-  val layout: Layout[VecT]
   val background: Background[VecT]
+  def layout(playerId: Option[Int]): Layout[VecT]
 
   def start(players: Int): StateT
   

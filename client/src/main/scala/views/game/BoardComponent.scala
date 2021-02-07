@@ -48,7 +48,7 @@ import games.core.State.AnyState
   private val images = new ImageCache()
 
   private lazy val game = props.board.game
-  private lazy val layout = game.layout
+  private def layout = game.layout(props.session.player.map(_.turnOrder))
   private lazy val background = game.background
   
   private def gameState = props.gameState.asInstanceOf[HistoryT]
@@ -77,7 +77,7 @@ import games.core.State.AnyState
 
   private def mouseDown(pos: Vec2) = {
 
-    val scene = new SceneT(game, gameState.state, state.canvasSize)
+    val scene = new SceneT(game, gameState.state, layout, state.canvasSize)
 
     if (props.session.player.exists(_.turnOrder == gameState.state.turn)
         && props.board.ongoing) {
@@ -101,7 +101,7 @@ import games.core.State.AnyState
 
     setState(_.copy(drag = false))
 
-    val scene = new SceneT(game, gameState.state, state.canvasSize)
+    val scene = new SceneT(game, gameState.state, layout, state.canvasSize)
 
     (selected zip scene.location(pos)) foreach {
       case (from, to) =>  tryMove(from, to)
@@ -138,7 +138,7 @@ import games.core.State.AnyState
 
   override def componentDidUpdate(prevProps: Props, prevState: State) = {
 
-    val scene = new SceneT(game, gameState.state, state.canvasSize)
+    val scene = new SceneT(game, gameState.state, layout, state.canvasSize)
 
     canvas.width = canvas.clientWidth
     canvas.height = canvas.clientHeight

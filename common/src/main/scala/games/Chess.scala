@@ -27,9 +27,12 @@ class Chess(val id: Int) extends Game {
   type StateT = State[Vec2, ChessPiece, Null]
 
   val manifold = Manifold.Rectangle(8, 8)
-  val layout = Layout.Grid
+  
   val background = Background.Checkerboard(
     Colour.sourLemon, Colour.brightYarrow)
+
+  def layout(playerId: Option[Int]) = if (playerId.contains(1))
+    Layout.FlippedGrid else Layout.Grid
 
   def start(players: Int) = {
 
