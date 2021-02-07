@@ -8,13 +8,12 @@ import slinky.core.annotations.react
 import slinky.web.html._
 import slinky.web.ReactDOM
 import io.circe._, io.circe.generic.auto._, io.circe.parser._, io.circe.syntax._
-import views.components.Tabs, views.components.Tabs.Tab
 import models.{Board, User}
 import models.protocols.SearchProtocol._
 import models.protocols.BoardProtocol._
-import views.components.menu.PaginationComponent
 import views.helpers.FetchJson
-import views.components.ButtonComponent
+import views.menu.{PaginationComponent, ButtonComponent}
+import views.menu.Tabs, views.menu.Tabs.Tab
 
 object BrowseView {
 

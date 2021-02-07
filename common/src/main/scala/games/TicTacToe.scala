@@ -13,6 +13,7 @@ class TicTacToe(val id: Int) extends Game {
   sealed trait TicTacToePiece extends Piece
 
   type VecT = Vec2
+  type PieceT = TicTacToePiece
   type StateT = State[VecT, TicTacToePiece, Null]
   
   val manifold = Manifold.Rectangle(3, 3)
@@ -22,5 +23,5 @@ class TicTacToe(val id: Int) extends Game {
 
   def start(players: Int) = State()
 
-  def successors(state: StateT) = Seq(state)
+  def next(history: HistoryT) = Seq(history)
 }

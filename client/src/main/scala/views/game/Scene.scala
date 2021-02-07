@@ -1,4 +1,4 @@
-package views.components.board
+package views.game
 
 import games.core.{Background, Colour, Game, Layout, Manifold, State, Vec, Vec2}
 import slinky.web.html.height
