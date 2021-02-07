@@ -1,7 +1,7 @@
 package games
 
 import games.core.{
-  Action, Background, Colour, Game,
+  Action, Background, Colour, Game, History,
   Layout, Manifold, Piece, State, Vec2
 }
 
@@ -23,12 +23,16 @@ class Chess(val id: Int) extends Game {
   case class King(ownerId: Int) extends ChessPiece("king")
 
   type VecT = Vec2
+  type PieceT = ChessPiece
   type StateT = State[Vec2, ChessPiece, Null]
 
   val manifold = Manifold.Rectangle(8, 8)
-  val layout = Layout.Grid
+  
   val background = Background.Checkerboard(
     Colour.sourLemon, Colour.brightYarrow)
+
+  def layout(playerId: Option[Int]) = if (playerId.contains(1))
+    Layout.FlippedGrid else Layout.Grid
 
   def start(players: Int) = {
 
@@ -45,9 +49,11 @@ class Chess(val id: Int) extends Game {
       .addPieces(manifold.row(6), List.fill(8)(Pawn(1)))
   }
 
-  def successors(state: StateT) = {
+  def next(history: HistoryT) = {
 
-    val actions = state.pieceSeq.flatMap {
+    val state = history.state
+
+    val successors: Map[Move, StateT] = state.pieces.flatMap {
 
       case pos -> Pawn(state.turn) => {
 
@@ -64,31 +70,40 @@ class Chess(val id: Int) extends Game {
           .map(pos + dir + _).filter(state.enemy)
 
         (forward ++ double ++ captures)
-          .map(Action.Move(pos, _))
+          .filter(manifold.inBounds)
+          .map(to => Action.Move(pos, to) -> state.movePiece(pos, to))
       }
 
       case pos -> Rook(state.turn) =>
         Vec2.orthogonal
           .flatMap(manifold.rayTo(pos, _, state.occupied))
-          .map(Action.Move(pos, _))
+          .map(to => Action.Move(pos, to) -> state.movePiece(pos, to))
+
+      case pos -> Knight(state.turn) =>
+        manifold.box(pos, 2)
+          .filter(to => (to - pos).x.abs + (to - pos).y.abs == 3)
+          .map(to => Action.Move(pos, to) -> state.movePiece(pos, to))
 
       case pos -> Bishop(state.turn) =>
         Vec2.diagonal
           .flatMap(manifold.rayTo(pos, _, state.occupied))
-          .map(Action.Move(pos, _))
+          .map(to => Action.Move(pos, to) -> state.movePiece(pos, to))
 
       case pos -> Queen(state.turn) =>
         Vec2.cardinal
           .flatMap(manifold.rayTo(pos, _, state.occupied))
-          .map(Action.Move(pos, _))
+          .map(to => Action.Move(pos, to) -> state.movePiece(pos, to))
+
+      case pos -> King(state.turn) =>
+        manifold.box(pos, 1)
+          .map(to => Action.Move(pos, to) -> state.movePiece(pos, to))
 
       case _ => None
     } 
 
-    actions
-      .filter(_.inBounds(manifold))
-      .filter(!_.selfCapture(state))
-      .map(_.actuate(state))
-      .map(_.endTurn())
+    successors
+      .filterKeys(!_.selfCapture(state))
+      .mapValues(_.endTurn())
+      .map(history.push)
   }
 }

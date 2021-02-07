@@ -6,8 +6,6 @@ case class State[V <: Vec, P <: Piece, S] (
   pieces: Map[V, P] = Map[V, P](),
   players: List[PlayerState[P]] = List[PlayerState[P]](),
   stage: S = null,
-  previous: Option[State[V, P, S]] = None,
-  action: Option[Action] = None,
   turn: Int = 0
 ) {
 
@@ -25,16 +23,12 @@ case class State[V <: Vec, P <: Piece, S] (
     copy(pieces = this.pieces ++ (pos zip pieces))
   }
 
-  def movePiece(from: V, to: V) = {
+  def movePiece(from: V, to: V): State[V, P, S] = {
     copy(pieces = pieces - from + (to -> pieces(from)))
   }
 
   def removePiece(pos: V) = {
     copy(pieces = pieces - pos)
-  }
-
-  def pushAction(action: Action) = {
-    copy(action = Some(action))
   }
 
   def endTurn(skip: Int = 1) = {

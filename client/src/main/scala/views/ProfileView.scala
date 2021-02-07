@@ -8,9 +8,6 @@ import slinky.core.facade.ReactElement
 import slinky.core.annotations.react
 import slinky.web.ReactDOM, slinky.web.html._
 import models.User, games.core._
-import views.components.menu.PaginationComponent
-import views.components.ButtonComponent
-import views.components.Tabs.Tab
 import java.awt.MenuComponent
 import models.protocols.BoardProtocol._
 import models.protocols.UserProtocol._
@@ -19,7 +16,8 @@ import slinky.web.svg.requiredExtensions
 import models.protocols.SearchProtocol.SearchResponse
 import models.protocols.SearchProtocol.SearchQuery
 import views.helpers.FetchJson
-import views.components.menu.SearchComponent
+import views.menu.{PaginationComponent, ButtonComponent, SearchComponent}
+import views.menu.Tabs, views.menu.Tabs.Tab
 import slinky.core.facade.ErrorBoundaryInfo
 import cats.instances.boolean
 

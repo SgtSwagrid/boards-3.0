@@ -1,4 +1,4 @@
-package views.components.menu
+package views.menu
 
 import slinky.core.Component
 import slinky.core.annotations.react

@@ -1,4 +1,4 @@
-package views.components.board
+package views.game
 
 import org.scalajs.dom._
 import org.scalajs.dom.html.Canvas
@@ -13,10 +13,8 @@ import io.circe._, io.circe.generic.auto._, io.circe.parser._, io.circe.syntax._
 
 import models.Board
 import models.protocols.BoardProtocol._
-import games.core.{Action, Colour, Game, State, Vec, Vec2}
+import games.core.{Action, Colour, Game, History, State, Vec, Vec2}
 import games.core.State.AnyState
-import views.components.BoardView.BoardSession
-import views.components.board.ImageCache
 
 @react class BoardComponent extends Component {
   
@@ -24,7 +22,7 @@ import views.components.board.ImageCache
 
   case class Props (
     board: Board,
-    gameState: AnyState,
+    gameState: History[_ <: AnyState],
     session: BoardSession
   )
 
@@ -50,16 +48,18 @@ import views.components.board.ImageCache
   private val images = new ImageCache()
 
   private lazy val game = props.board.game
-  private lazy val layout = game.layout
+  private def layout = game.layout(props.session.player.map(_.turnOrder))
   private lazy val background = game.background
   
-  private def gameState = props.gameState.asInstanceOf[StateT]
+  private def gameState = props.gameState.asInstanceOf[HistoryT]
 
   private type VecT = game.VecT
-  private type StateT = game.StateT
+  private type HistoryT = game.HistoryT
   private type SceneT = Scene[VecT]
   
   private def selected = state.selected.asInstanceOf[Option[VecT]]
+
+  private def myTurn = props.session.player.exists(_.turnOrder == props.gameState.state.turn)
 
   override def componentDidMount() = {
 
@@ -78,10 +78,9 @@ import views.components.board.ImageCache
 
   private def mouseDown(pos: Vec2) = {
 
-    val scene = new SceneT(game, gameState, state.canvasSize)
+    val scene = new SceneT(game, gameState.state, layout, state.canvasSize)
 
-    if (props.session.player.exists(_.turnOrder == gameState.turn)
-        && props.board.ongoing) {
+    if (myTurn && props.board.ongoing) {
 
       val moved = (selected zip scene.location(pos)) exists {
         case (from, to) => tryMove(from, to)
@@ -90,11 +89,12 @@ import views.components.board.ImageCache
       if (!moved) {
 
         val loc = scene.location(pos).filter { loc =>
-          game.moves(gameState, loc).nonEmpty
+          moves(gameState, loc).nonEmpty
         }
 
         setState(_.copy(selected = loc, drag = true))
       }
+      autoSelect()
     }
   }
 
@@ -102,10 +102,10 @@ import views.components.board.ImageCache
 
     setState(_.copy(drag = false))
 
-    val scene = new SceneT(game, gameState, state.canvasSize)
+    val scene = new SceneT(game, gameState.state, layout, state.canvasSize)
 
     (selected zip scene.location(pos)) foreach {
-      case (from, to) =>  tryMove(from, to)
+      case (from, to) => tryMove(from, to)
     }
   }
 
@@ -124,7 +124,7 @@ import views.components.board.ImageCache
 
   private def takeAction(action: Action) {
 
-    val actionId = game.actions(gameState).indexOf(action)
+    val actionId = game.actions(gameState).toSeq.indexOf(action)
     val request: BoardRequest = TakeAction(props.board.id, actionId)
     if (actionId != -1) props.session.socket.send(request.asJson.toString)
   }
@@ -137,12 +137,28 @@ import views.components.board.ImageCache
     Vec2(x, y)
   }
 
-  override def componentDidUpdate(prevProps: Props, prevState: State) = {
+  private def autoSelect() = {
 
-    val scene = new SceneT(game, gameState, state.canvasSize)
+    game.actions(gameState).toSeq match {
+      case Action.Move(from, _) :: actions =>
+        if (actions.forall {
+          case Action.Move(`from`, _) => true
+          case _ => false
+        }) setState(_.copy(selected = Some(from)))
+      case _ => ()
+    }
+  }
+
+  override def componentDidUpdate(prevProps: Props, prevState: State) = {
+    
+    if (props != prevProps && props.board.ongoing && myTurn) autoSelect()
+
+    val scene = new SceneT(game, gameState.state, layout, state.canvasSize)
 
     canvas.width = canvas.clientWidth
     canvas.height = canvas.clientHeight
+
+    List().nonEmpty
 
     draw(scene)
   }
@@ -170,7 +186,7 @@ import views.components.board.ImageCache
 
     context.fillRect(x, y, width, height)
     
-    gameState.pieces.get(loc) foreach { piece =>
+    gameState.state.pieces.get(loc) foreach { piece =>
       if (!(selected == Some(loc) && state.drag)) {
 
         val image = images.image(piece.texture)
@@ -182,28 +198,28 @@ import views.components.board.ImageCache
 
   private def drawHints(scene: SceneT, loc: VecT) = {
 
-    game.moves(gameState, loc) foreach { move =>
+    moves(gameState, loc) foreach { move =>
       
       val Vec2(x, y) = scene.position(move.to) + scene.size(move.to) / 2
       
       val tileSize = scene.size(move.to)
       val size = (tileSize.x min tileSize.y) / 2
 
-      if (gameState.pieces.isDefinedAt(move.to)) {
+      if (gameState.state.pieces.isDefinedAt(move.to)) {
 
-        context.strokeStyle = Colour.fusionRed.hex
+        context.strokeStyle = Colour.naval.hex
         context.globalAlpha = 0.8
-        context.lineWidth = size * 0.25
+        context.lineWidth = size * 0.2
         context.beginPath()
         context.arc(x, y, size * 0.8, 0, 2 * Math.PI)
         context.stroke()
 
       } else {
 
-        context.fillStyle = Colour.fusionRed.hex
+        context.fillStyle = Colour.naval.hex
         context.globalAlpha = 0.8
         context.beginPath()
-        context.arc(x, y, size * 0.4, 0, 2 * Math.PI)
+        context.arc(x, y, size * 0.35, 0, 2 * Math.PI)
         context.fill()
       }
     }
@@ -212,11 +228,19 @@ import views.components.board.ImageCache
   private def drawDrag(scene: SceneT, loc: VecT) = {
 
     val Vec2(width, height) = scene.size(loc)
-    val piece = gameState.pieces(loc)
+    val piece = gameState.state.pieces(loc)
     val image = images.image(piece.texture)
 
     val Vec2(mx, my) = state.cursor
     context.globalAlpha = 0.8
     context.drawImage(image, mx - width/2, my - height/2, width, height)
+  }
+
+  private def moves(state: HistoryT, pos: VecT) = {
+    
+    game.actions(state).filter {
+      case Action.Move(from, to) => from == pos
+      case _ => false
+    }.map(_.asInstanceOf[game.Move])
   }
 }

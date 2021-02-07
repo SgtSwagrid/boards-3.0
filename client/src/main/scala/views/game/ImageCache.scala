@@ -1,4 +1,4 @@
-package views.components.board
+package views.game
 
 import scala.collection.mutable
 import org.scalajs.dom.document

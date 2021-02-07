@@ -11,7 +11,7 @@ object Action {
   case class Move[V <: Vec](from: V, to: V) extends Action {
 
     def actuate[S <: State.VState[V]](state: S) =
-      state.movePiece(from, to).pushAction(this).asInstanceOf[S]
+      state.movePiece(from, to).asInstanceOf[S]
 
     def inBounds(manifold: Manifold[V]) =
       manifold.inBounds(to)

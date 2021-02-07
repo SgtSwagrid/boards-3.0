@@ -18,6 +18,13 @@ object Layout {
     def shape(pos: Vec2) = Rectangle
   }
 
+  case object FlippedGrid extends Layout[Vec2] {
+
+    def position(pos: Vec2) = -pos
+    def size(pos: Vec2) = Vec2(1, 1)
+    def shape(pos: Vec2) = Rectangle
+  }
+
   sealed trait Shape
   case object Rectangle extends Shape
   case object Triangle extends Shape

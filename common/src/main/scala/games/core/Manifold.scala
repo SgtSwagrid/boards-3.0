@@ -36,6 +36,26 @@ object Manifold {
         case (prefix, suffix) => prefix ++ suffix.headOption
       }
     }
+
+    def box(centre: Vec2, r: Int): Seq[Vec2] = {
+
+      val box = for {
+        x <- -r to r
+        y <- if (x.abs == r) -r to r else Seq(-r, r)
+      } yield Vec2(x, y)
+
+      box.map(_ + centre).filter(inBounds)
+    }
+
+    def diamond(centre: Vec2, r: Int): Seq[Vec2] = {
+
+      val diamond = for {
+        x <- -r to r
+        y <- Set(r - x.abs, x.abs - r)
+      } yield Vec2(x, y)
+
+      diamond.map(_ + centre).filter(inBounds)
+    }
   }
 
   case class Rectangle(width: Int, height: Int) extends Rectangular {
