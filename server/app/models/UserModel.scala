@@ -8,8 +8,7 @@ import forms.UserForms._
 import models.protocols.SearchProtocol.SearchQuery
 import models.protocols.UserProtocol.UserFilter
 import models.protocols.SearchProtocol.SearchResponse
-import models.protocols.UserProtocol.NameContainsSubstring
-import models.protocols.UserProtocol.NameAlphabetical
+import models.protocols.UserProtocol._
 import models.Friend
 import io.circe.Decoder.state
 import models.schema.FriendSchema.Friends
@@ -84,6 +83,16 @@ class UserModel(db: Database)(implicit ec: ExecutionContext) {
 
         case NameAlphabetical => q.sortBy(_.username)
           
+        case PendingFriends(userId: Int) => q.filter { user => 
+          val friends = DBQuery.pendingFriendsByReceiver(userId)
+          friends.filter { friend => friend.user1Id === user.id }.exists
+        }
+
+        case AcceptedFriends(userId: Int) => q.filter { user => 
+          val friends = DBQuery.friendsByUser(userId)
+          friends.filter { friend => friend.id === user.id }.exists
+        }
+
       }
     }
 
@@ -102,11 +111,28 @@ class UserModel(db: Database)(implicit ec: ExecutionContext) {
     def userByName(username: String) =
       Users.filter(_.username === username)
 
+    // todo I think the order of these filters should be reversed
     def friendsByUserByStatus(userId: Int, friendStatus: Int) = 
       Users.filter { user =>
         Friends.filter { friend =>
           ((friend.user1Id === userId && friend.user2Id === user.id) ||
           (friend.user2Id === userId && friend.user1Id === user.id)) && 
+          (friend.status === friendStatus)
+        }.exists
+      }
+
+    def friendsByReceiverByStatus(receiverId: Int, friendStatus: Int) = 
+      Friends.filter { friend =>
+        Users.filter { user =>
+          (friend.user1Id === user.id && friend.user2Id === receiverId) && 
+          (friend.status === friendStatus)
+        }.exists
+      }
+
+    def friendsBySenderByStatus(senderId: Int, friendStatus: Int) = 
+      Friends.filter { friend =>
+        Users.filter { user =>
+          (friend.user1Id === senderId && friend.user2Id === user.id) && 
           (friend.status === friendStatus)
         }.exists
       }
@@ -123,7 +149,14 @@ class UserModel(db: Database)(implicit ec: ExecutionContext) {
     def friendById(friendId: Int) = 
       Friends.filter(_.id === friendId)
 
+    def pendingFriendsByReceiver(userId: Int) =
+      friendsByReceiverByStatus(userId, 0)
+
+    def declinedFriendsByReceiver(userId: Int) =
+      friendsByReceiverByStatus(userId, 2)
+
   }
+
 
   private[models] object DBAction {
 
@@ -138,15 +171,40 @@ class UserModel(db: Database)(implicit ec: ExecutionContext) {
 
     def getPendingFriendsByUser(userId: Int) =
       DBQuery.pendingFriendsByUser(userId).result
+
+    //def getPendingFriendsByReceiver(userId: Int) =
+    //  DBQuery.friendsByReceiverByStatus(userId, 0)
+
+    //def getDeclinedFriendsByReceiver(userId: Int) =
+    //  DBQuery.friendsByReceiverByStatus(userId, 2)
+
+    def acceptFriend(senderId: Int, receiverId: Int) =
+      DBQuery.friendsByReceiverByStatus(receiverId, 0)
+        .filter(_.user1Id === senderId)
+        .map(_.status)
+        .update(1)
+
+    def declineFriend(senderId: Int, receiverId: Int) =
+      DBQuery.friendsByReceiverByStatus(receiverId, 0)
+        .filter(_.user1Id === senderId)
+        .map(_.status)
+        .update(2)
   }
 
-  
   def createFriend(senderId: Int, receiverId: Int): Future[Friend] = {
 
     val friend = Friend(user1Id=senderId, user2Id=receiverId, 
       status=0, date=LocalDateTime.now())
     
     db.run(Friends += friend).map(_ => friend)
+  }
+
+  def acceptFriend(senderId: Int, receiverId: Int): Future[Boolean] = {
+    db.run(DBAction.acceptFriend(senderId, receiverId)).map(_ > 0)
+  }
+
+  def declineFriend(senderId: Int, receiverId: Int): Future[Boolean] = {
+    db.run(DBAction.declineFriend(senderId, receiverId)).map(_ > 0)
   }
 
   def friendsOfUser(userId: Int) = {

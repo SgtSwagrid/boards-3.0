@@ -46,13 +46,13 @@ object BrowseView {
           "/assets/img/earth-grid.svg",
           BoardListComponent(AllBoards)
         ), Tab (
+          "My Boards",
+          "/assets/img/user.svg",
+          BoardListComponent(UserBoards(props.user.id))
+        ), Tab (
           "Friend's Boards",
           "/assets/img/followers.svg",
           BoardListComponent(FriendsBoards(props.user.id))
-        ), Tab (
-          "My Boards",
-          "/assets/img/user.svg",
-          BoardListComponent(MyBoards(props.user.id))
         )
       )
     )

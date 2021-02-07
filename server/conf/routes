@@ -13,10 +13,12 @@ GET  /users/register                         controllers.UserController.register
 POST /users/register                         controllers.UserController.register(next: String ?= "/")
 GET  /users/logout                           controllers.UserController.logout(next: String ?= "/")
 
+POST /users/query                            controllers.UserController.userQuery
 GET  /users/profile                          controllers.UserController.userProfile
 GET  /users/profile/:username                controllers.UserController.user(username: String)
 POST /users/friends/create/:receiverId       controllers.UserController.friendRequest(receiverId: Int)
-POST /users/query                            controllers.UserController.userQuery
+POST /users/friends/accept/:requesteeId      controllers.UserController.friendRequestAccept(requesteeId: Int)
+POST /users/friends/decline/:requesteeId     controllers.UserController.friendRequestDecline(requesteeId: Int)
 
 GET  /assets/*file                           controllers.Assets.at(file)
 GET  /versionedAssets/*file                  controllers.Assets.versioned(path="/public", file: Asset)

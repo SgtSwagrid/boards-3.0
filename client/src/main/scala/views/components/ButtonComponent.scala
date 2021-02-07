@@ -18,7 +18,7 @@ import slinky.core.annotations.react
     click: () => Unit
   )
 
-  def render() = div(className := "center") (
+  def render() = span (
     a(className := (if (props.block) blockClass else buttonClass),
         onClick := (_ => props.click())) ( span (
       b(className := textClass)(props.text),

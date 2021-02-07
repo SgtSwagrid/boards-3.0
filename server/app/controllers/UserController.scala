@@ -99,6 +99,22 @@ class UserController @Inject()
     }
   }
 
+  def friendRequestAccept(requesteeId: Int) = Action.async { implicit request =>
+    withUser { user => 
+      userModel.acceptFriend(requesteeId, user.id) map { friend =>
+        Ok(friend.asJson.toString)
+      }
+    }
+  }
+  
+  def friendRequestDecline(requesteeId: Int) = Action.async { implicit request =>
+    withUser { user => 
+      userModel.declineFriend(requesteeId, user.id) map { friend =>
+        Ok(friend.asJson.toString)
+      }
+    }
+  }
+
   private def showError(error: InvalidUser): (String, String) = "error" -> (error match {
 
     case UnknownUsername => "User does not exist."
