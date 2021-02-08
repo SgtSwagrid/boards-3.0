@@ -179,10 +179,7 @@ import games.core.State.AnyState
     val Vec2(width, height) = scene.size(loc)
     val colour = background.colour(loc)
 
-    context.fillStyle =
-      if (selected == Some(loc)) colour.darken(50).hex
-      else if (scene.location(state.cursor) == Some(loc)) colour.darken(25).hex
-      else colour.hex
+    context.fillStyle = tileColour(scene, loc).hex
 
     context.fillRect(x, y, width, height)
     
@@ -196,8 +193,30 @@ import games.core.State.AnyState
     }
   }
 
-  private def drawHints(scene: SceneT, loc: VecT) = {
+  private def tileColour(scene: SceneT, loc: VecT) = {
 
+    val base = background.colour(loc)
+
+    val changes = gameState.action.toSeq flatMap {
+      case Action.Place(pos, _) => Some(pos)
+      case Action.Move(from, to) => Seq(from, to)
+      case Action.Destroy(pos) => Some(pos)
+      case _ => None
+    }
+
+    val highlighted =
+      if (state.selected.contains(loc))
+        Colour.mix(base, Colour.naval)(1, 1)
+      else if (changes.contains(loc))
+        Colour.mix(base, Colour.downloadProgess)(1, 1)
+      else base
+
+    if (scene.location(state.cursor) == Some(loc))
+      highlighted.darken(25) else highlighted
+  }
+
+  private def drawHints(scene: SceneT, loc: VecT) = {
+s
     moves(gameState, loc) foreach { move =>
       
       val Vec2(x, y) = scene.position(move.to) + scene.size(move.to) / 2

@@ -37,6 +37,7 @@ object Colour {
   val brightYarrow = hex("#FDBC6E")
 
   // British Palette
+  val downloadProgess = hex("#4CD137")
   val searbrook = hex("#487EB0")
   val naval = hex("#40739E")
   val lynxWhite = hex("#F5F6FA")
@@ -58,4 +59,18 @@ object Colour {
   }
 
   def hex(hex: String) = Colour(hex)
+
+  def mix(colours: Colour*)(weights: Int*): Colour = {
+
+    (colours zip weights.map(_ / weights.sum.toFloat)).map {
+      case (colour, weight) =>
+        Colour.rgb (
+          (colour.r * weight).toInt,
+          (colour.g * weight).toInt,
+          (colour.b * weight).toInt
+        )
+    }.foldLeft(Colour.rgb(0, 0, 0)) { (acc, colour) =>
+      Colour.rgb(acc.r + colour.r, acc.g + colour.g, acc.b + colour.b)
+    }
+  }
 }

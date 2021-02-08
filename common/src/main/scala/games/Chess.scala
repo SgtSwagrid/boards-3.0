@@ -31,8 +31,9 @@ class Chess(val id: Int) extends Game {
   val background = Background.Checkerboard(
     Colour.sourLemon, Colour.brightYarrow)
 
-  def layout(playerId: Option[Int]) = if (playerId.contains(1))
-    Layout.FlippedGrid else Layout.Grid
+  def layout(playerId: Option[Int]) =
+    if (playerId.contains(1)) Layout.FlippedGrid
+    else Layout.Grid
 
   def start(players: Int) = {
 
