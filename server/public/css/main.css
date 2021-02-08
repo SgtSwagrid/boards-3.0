@@ -14,6 +14,12 @@
   font-size: 48px;
 }
 
+.mid-text {
+  vertical-align: middle;
+  margin: 5px;
+  height: 36px;
+}
+
 .title {
   padding-top: 25px;
   padding-bottom: 25px;
@@ -73,6 +79,49 @@ main {
   width: 25px;
   height: 25px;
   margin-right: 10px;
+}
+
+.menu-item-btn {
+  margin: 5px;
+}
+
+.row-item {
+  height: 40px;
+}
+
+.span-btn {
+  margin-left: 5px;
+  width: 150px;
+  height: 36px;
+  display: inline-block;
+}
+
+.sbtn {
+  text-align: center;
+  cursor: pointer;
+  border-radius: 2px;
+  display: inline-block;
+  height: 36px;
+  line-height: 36px;
+  padding: 0 16px;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+.accept-btn {
+  margin: 5px;
+  right: 110px;
+  width: 100px;
+  color: #0f6622;
+  background-color: #26a69a;
+}
+
+.decline-btn {
+  margin: 5px;
+  right: 10px;
+  width: 100px;
+  color: #66150f;
+  background-color: #26a69a;
 }
 
 .nav-wrapper {

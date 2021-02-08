@@ -26,7 +26,7 @@ object BoardProtocol {
   sealed trait BoardFilter
 
   case object AllBoards extends BoardFilter
-  case class MyBoards(userId: Int) extends BoardFilter
+  case class UserBoards(userId: Int) extends BoardFilter
   case class FriendsBoards(userId: Int) extends BoardFilter
   case object MostRecent extends BoardFilter
 }
