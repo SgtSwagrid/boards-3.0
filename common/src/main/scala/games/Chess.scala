@@ -61,16 +61,13 @@ class Chess(val id: Int) extends Game {
         val home = pos.y == state.byPlayer(1, 6)
         val dir = state.byPlayer(Vec2.N, Vec2.S)
 
-        val forward = Some(pos + dir)
-          .filter(state.empty)
-
-        val double = Option.when(home)(pos + (dir * 2))
-          .filter(state.empty)
+        val forward = manifold.ray(pos, dir, if (home) 2 else 1)
+          .takeWhile(state.empty)
 
         val captures = Seq(Vec2.W, Vec2.E)
           .map(pos + dir + _).filter(state.enemy)
 
-        (forward ++ double ++ captures)
+        (forward ++ captures)
           .filter(manifold.inBounds)
           .map(to => Action.Move(pos, to) -> state.movePiece(pos, to))
       }
