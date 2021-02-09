@@ -135,16 +135,19 @@ class BoardModel(db: Database)(implicit ec: ExecutionContext) {
     db.run(DBAction.getPlayerByUser(boardId, userId))
   }
 
-  def getParticipants(boardId: String): Future[Seq[Participant]] = {
+  def getUsers(boardId: String): Future[Seq[User]] = {
 
-    val players = DBQuery.playersByBoard(boardId)
-    val playersWithUsers = (players join Users on (_.userId === _.id)).result
+    val query = DBQuery.playersByBoard(boardId) join Users on (_.userId === _.id)
+    val users = query.map { case (_, users) => users }
+    db.run(users.result)
+  }
 
-    val participants = playersWithUsers.map(_.map {
-      case (player, user) => Participant(player, user)
-    })
+  def getPlayersWithUsers(boardId: String): Future[(Seq[Player], Seq[User])] = {
 
-    db.run(participants).map(_.sortBy(_.player.turnOrder))
+    for {
+      players <- getPlayers(boardId)
+      users <- getUsers(boardId)
+    } yield (players, users)
   }
 
   def takeAction(boardId: String, actionId: Int, playerOrder: Int): Future[Unit] = {

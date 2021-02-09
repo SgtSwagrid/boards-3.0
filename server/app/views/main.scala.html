@@ -29,25 +29,25 @@
         <a href="/" class="brand-logo">Boards</a>
         <ul id="nav-mobile" class="right hide-on-med-and-down">
           <li><a href="/games/create">
-            <img class="small-icon" src='@routes.Assets.versioned("img/play.svg")'>
+            <img class="small-text-icon" src='@routes.Assets.versioned("img/play.svg")'>
             <span class="white-text">New Game</span>
           </a></li>
           <li><a href="/games/browse">
-            <img class="small-icon" src='@routes.Assets.versioned("img/menu.svg")'>
+            <img class="small-text-icon" src='@routes.Assets.versioned("img/menu.svg")'>
             <span class="white-text">Browse Games</span>
           </a></li>
           @if(user.isDefined) {
             <li><a href="/users/profile">
-              <img class="small-icon" src='@routes.Assets.versioned("img/user.svg")'>
+              <img class="small-text-icon" src='@routes.Assets.versioned("img/user.svg")'>
               <span class="white-text">Profile</span>
             </a></li>
             <li><a href="/users/logout">
-              <img class="small-icon" src='@routes.Assets.versioned("img/logout.svg")'>
+              <img class="small-text-icon" src='@routes.Assets.versioned("img/logout.svg")'>
               <span class="white-text">Logout @user.get.username</span>
             </a></li>
           } else {
             <li><a href="/users/login">
-              <img class="small-icon" src='@routes.Assets.versioned("img/join.svg")'>
+              <img class="small-text-icon" src='@routes.Assets.versioned("img/join.svg")'>
               <span class="white-text">Login/Register</span>
             </a></li>
           }
@@ -68,13 +68,13 @@
             </div>
             <div class="col s12 m4 push-m1 l3 push-l1">
               <a href="https://github.com/SgtSwagrid/boards" target="_blank">
-                <img class="medium-icon" src='@routes.Assets.versioned("img/github.svg")'>
+                <img class="medium-text-icon" src='@routes.Assets.versioned("img/github.svg")'>
               </a>
               <a href="https://discord.gg/EWsnD2QhBW" target="_blank">
-              <img class="medium-icon" src='@routes.Assets.versioned("img/discord.svg")'>
+              <img class="medium-text-icon" src='@routes.Assets.versioned("img/discord.svg")'>
               </a>
               <a href="https://www.youtube.com/channel/UC7DY6cKGEwpEtS8bBza03yA" target="_blank">
-                <img class="medium-icon" src='@routes.Assets.versioned("img/youtube.svg")'>
+                <img class="medium-text-icon" src='@routes.Assets.versioned("img/youtube.svg")'>
               </a>
             </div>
           </div>

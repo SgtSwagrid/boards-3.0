@@ -23,6 +23,7 @@ import games.core.State.AnyState
   case class Props (
     board: Board,
     gameState: History[_ <: AnyState],
+    current: Boolean,
     session: BoardSession
   )
 
@@ -60,6 +61,7 @@ import games.core.State.AnyState
   private def selected = state.selected.asInstanceOf[Option[VecT]]
 
   private def myTurn = props.session.player.exists(_.turnOrder == props.gameState.state.turn)
+  private def canPlay = props.board.ongoing && props.current && myTurn
 
   override def componentDidMount() = {
 
@@ -80,7 +82,7 @@ import games.core.State.AnyState
 
     val scene = new SceneT(game, gameState.state, layout, state.canvasSize)
 
-    if (myTurn && props.board.ongoing) {
+    if (canPlay) {
 
       val moved = (selected zip scene.location(pos)) exists {
         case (from, to) => tryMove(from, to)
@@ -151,7 +153,11 @@ import games.core.State.AnyState
 
   override def componentDidUpdate(prevProps: Props, prevState: State) = {
     
-    if (props != prevProps && props.board.ongoing && myTurn) autoSelect()
+    if (props != prevProps) {
+      if (canPlay) autoSelect()
+      else setState(_.copy(selected = None, drag = false))
+    }
+    if (props != prevProps && canPlay) autoSelect()
 
     val scene = new SceneT(game, gameState.state, layout, state.canvasSize)
 

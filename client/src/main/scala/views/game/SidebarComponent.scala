@@ -2,22 +2,38 @@ package views.game
 
 import org.scalajs.dom._
 
-import slinky.core.{Component, StatelessComponent}
+import slinky.core.StatelessComponent
 import slinky.core.annotations.react
 import slinky.web.html
 import slinky.web.html._
 
 import io.circe._, io.circe.generic.auto._, io.circe.parser._, io.circe.syntax._
 
-import models.{Board, Participant}
+import models.{Board, Player, User}
 import models.protocols.BoardProtocol._
+import games.core.{History, State}
+import games.core.History.AnyHistory
+import games.core.State.AnyState
 import views.menu.ButtonComponent
 
-@react class SidebarComponent extends Component {
+@react class SidebarComponent extends StatelessComponent {
 
-    case class Props(board: Board, players: Seq[Participant], session: BoardSession)
-    type State = Unit
-    def initialState = ()
+    case class Props (
+      board: Board,
+      players: Seq[Player],
+      users: Seq[User],
+      currentHistory: AnyHistory,
+      visibleHistory: AnyHistory,
+      session: BoardSession,
+      goto: AnyHistory => Unit
+    )
+
+    private lazy val game = props.board.game
+
+    private type HistoryT = game.HistoryT
+
+    private def currentHistory = props.currentHistory.asInstanceOf[HistoryT]
+    private def visibleHistory = props.visibleHistory.asInstanceOf[HistoryT]
 
     def render() = div(className := "sidebar grey darken-2 z-depth-2") (
       div(className := "sidebar-header grey darken-3") (
@@ -25,7 +41,9 @@ import views.menu.ButtonComponent
         div(className := "small-text grey-text") ("#" + props.board.id)
       ),
       div(className := "sidebar-body") (
-        props.players.map(player => PlayerComponent(props.board, player, props.session)),
+        (props.players zip props.users).map { case (player, user) =>
+          PlayerComponent(props.board, player, user, visibleHistory, props.session)
+        },
         br(),
 
         if (props.board.setup) div (
@@ -54,7 +72,24 @@ import views.menu.ButtonComponent
             ButtonComponent("Delete Game", "/assets/img/remove.svg", true, delete)
           }
 
-        ) else div()
+        ) else div(),
+        
+        br(),
+
+        div(className := "center") (
+          img(className := "medium-icon", src := "/assets/img/icon/first.svg",
+            onClick := (_ => first())
+          ),
+          img(className := "medium-icon", src := "/assets/img/icon/previous.svg",
+            onClick := (_ => previous())
+          ),
+          img(className := "medium-icon", src := "/assets/img/icon/next.svg",
+            onClick := (_ => next())
+          ),
+          img(className := "medium-icon", src := "/assets/img/icon/last.svg",
+            onClick := (_ => last())
+          )
+        )
       )
     )
 
@@ -77,20 +112,52 @@ import views.menu.ButtonComponent
       val action: BoardRequest = StartGame(props.board.id)
       props.session.socket.send(action.asJson.toString)
     }
+
+    private def histories(history: HistoryT) =
+      Iterator(history) ++
+      Iterator.unfold(history)(h => h.previous zip h.previous)
+
+    private def first() =
+      props.goto(histories(visibleHistory).toSeq.last)
+
+    private def previous() =
+      visibleHistory.previous.foreach(props.goto)
+
+    private def next() =
+      histories(currentHistory)
+        .find(_.previous.contains(props.visibleHistory))
+        .foreach(props.goto)
+
+    private def last() =
+      props.goto(currentHistory)
   }
 
   @react class PlayerComponent extends StatelessComponent {
 
-    case class Props(board: Board, player: Participant, session: BoardSession)
+    case class Props (
+      board: Board,
+      player: Player,
+      user: User,
+      history: AnyHistory,
+      session: BoardSession
+    )
+
+    private lazy val game = props.board.game
+
+    private type StateT = game.StateT
+    private type HistoryT = game.HistoryT
+
+    private def history = props.history.asInstanceOf[HistoryT]
+    private def gameState = history.state
 
     def render() = div(className := "sidebar-player") (
       span(className := "medium-text white-text") (
-        if (props.player.player.isOwner) {
-          img(className := "medium-icon", src := "/assets/img/owner.svg")
+        if (props.player.isOwner) {
+          img(className := "medium-text-icon", src := "/assets/img/owner.svg")
         } else {
-          img(className := "medium-icon", src := "/assets/img/user.svg")
+          img(className := "medium-text-icon", src := "/assets/img/user.svg")
         },
-        props.player.user.username
+        props.user.username
       ),
       Option.when(props.session.owner && props.board.setup) {
         span(className := "player-options") (
@@ -107,21 +174,29 @@ import views.menu.ButtonComponent
             img(className := "remove-icon", src := "/assets/img/remove.svg")
           )
         )
-      }
+      },
+      div(className := "small-text white-text") (
+        (Option.when(props.player.turnOrder == gameState.turn) {
+          "Playing"
+        } ++ Option.when(gameState.players.exists(_.score != 0)) {
+          s"${gameState.players(props.player.turnOrder)} pts"
+        }).mkString(" &bull; ")
+      ),
+      hr()
     )
 
     private def remove() = {
-      val action: BoardRequest = RemovePlayer(props.board.id, props.player.player.id)
+      val action: BoardRequest = RemovePlayer(props.board.id, props.player.id)
       props.session.socket.send(action.asJson.toString)
     }
 
     private def promote() = {
-      val action: BoardRequest = PromotePlayer(props.board.id, props.player.player.id)
+      val action: BoardRequest = PromotePlayer(props.board.id, props.player.id)
       props.session.socket.send(action.asJson.toString)
     }
 
     private def demote() = {
-      val action: BoardRequest = DemotePlayer(props.board.id, props.player.player.id)
+      val action: BoardRequest = DemotePlayer(props.board.id, props.player.id)
       props.session.socket.send(action.asJson.toString)
     }
   }

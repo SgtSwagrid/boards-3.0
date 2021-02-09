@@ -4,8 +4,9 @@ import scala.concurrent.ExecutionContext
 import scala.collection.mutable
 import slick.jdbc.MySQLProfile.api.Database
 import akka.actor.{Actor, ActorRef, Props}
-import models.{BoardModel, UserModel, Participant}
+import models.{BoardModel, UserModel}
 import models.protocols.BoardProtocol._
+import scala.concurrent.Future
 
 class BoardManager(db: Database)
     (implicit ec: ExecutionContext) extends Actor {
@@ -25,7 +26,8 @@ class BoardManager(db: Database)
       case NewSpectator(boardId) => {
         actors += boardId -> (actor +: actors.get(boardId).getOrElse(Nil))
         boards.getBoard(boardId).foreach(actor ! SetBoard(_))
-        boards.getParticipants(boardId).map(actor ! SetPlayers(_))
+        boards.getPlayersWithUsers(boardId)
+          .map { case (p, u) => actor ! SetPlayers(p, u) }
         boards.getActions(boardId).map(a => actor !
           PushActions(a.map(a => ActionId(a.action, a.turnOrder))))
       }
@@ -34,29 +36,29 @@ class BoardManager(db: Database)
         if (userId == joiningId)
           for {
             _ <- boards.joinBoard(boardId, joiningId)
-            participants <- boards.getParticipants(boardId)
-          } broadcast(boardId, SetPlayers(participants))
+            (players, users) <- boards.getPlayersWithUsers(boardId)
+          } broadcast(boardId, SetPlayers(players, users))
       
       case RemovePlayer(boardId, playerId) =>
         if (player.exists(p => p.isOwner || p.id == playerId))
           for {
             _ <- boards.removePlayer(boardId, playerId)
-            participants <- boards.getParticipants(boardId)
-          } broadcast(boardId, SetPlayers(participants))
+            (players, users) <- boards.getPlayersWithUsers(boardId)
+          } broadcast(boardId, SetPlayers(players, users))
 
       case PromotePlayer(boardId, playerId) =>
         if (player.exists(_.isOwner))
           for {
             promoted <- boards.promotePlayer(boardId, playerId)
-            participants <- boards.getParticipants(boardId)
-          } broadcast(boardId, SetPlayers(participants))
+            (players, users) <- boards.getPlayersWithUsers(boardId)
+          } broadcast(boardId, SetPlayers(players, users))
 
       case DemotePlayer(boardId, playerId) =>
         if (player.exists(_.isOwner))
           for {
             demoted <- boards.demotePlayer(boardId, playerId)
-            participants <- boards.getParticipants(boardId)
-          } broadcast(boardId, SetPlayers(participants))
+            (players, users) <- boards.getPlayersWithUsers(boardId)
+          } broadcast(boardId, SetPlayers(players, users))
       
       case DeleteGame(boardId) => {
         if (player.exists(_.isOwner)) {

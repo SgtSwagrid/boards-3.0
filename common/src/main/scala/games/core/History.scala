@@ -1,6 +1,8 @@
 package games.core
 
-case class History[S <: State.AnyState] (
+import games.core.State.AnyState
+
+case class History[S <: AnyState] (
   state: S,
   action: Option[Action] = None,
   previous: Option[History[S]] = None
@@ -16,4 +18,8 @@ case class History[S <: State.AnyState] (
     val (action, state) = possibility
     History(state, Some(action), Some(this))
   }
+}
+
+object History {
+  type AnyHistory = History[_ <: AnyState]
 }

@@ -23,7 +23,7 @@ object Tabs {
       ul(className := "tabs tabs-fixed-width z-depth-1 blue-grey darken-3") (
         props.tabs.zipWithIndex map { case (tab, tabId) =>
           li(className := "tab") (a(className := "white-text", href := s"#$tabId") (
-            img(className := "small-icon", src := tab.icon),
+            img(className := "small-text-icon", src := tab.icon),
             b(tab.name)
           ))
         }

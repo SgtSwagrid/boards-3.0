@@ -65,7 +65,7 @@ main {
   margin-bottom: 20px !important;
 }
 
-.small-icon {
+.small-text-icon {
   position: relative;
   top: 5px;
   width: 20px;
@@ -73,12 +73,24 @@ main {
   margin-right: 5px;
 }
 
-.medium-icon {
+.medium-text-icon {
   position: relative;
   top: 2px;
   width: 25px;
   height: 25px;
   margin-right: 10px;
+}
+
+.small-icon {
+  width: 20px;
+  height: 20px;
+  margin: 5px;
+}
+
+.medium-icon {
+  width: 25px;
+  height: 25px;
+  margin: 10px;
 }
 
 .menu-item-btn {

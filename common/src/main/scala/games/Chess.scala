@@ -97,7 +97,7 @@ class Chess(val id: Int) extends Game {
           .map(to => Action.Move(pos, to) -> state.movePiece(pos, to))
 
       case _ => None
-    } 
+    }
 
     successors
       .filterKeys(!_.selfCapture(state))

@@ -1,6 +1,6 @@
 package models.protocols
 
-import models.{Board, Participant}
+import models.{Board, Player, User}
 
 object BoardProtocol {
   
@@ -18,7 +18,7 @@ object BoardProtocol {
   sealed trait BoardResponse
 
   case class SetBoard(board: Option[Board]) extends BoardResponse
-  case class SetPlayers(players: Seq[Participant]) extends BoardResponse
+  case class SetPlayers(players: Seq[Player], users: Seq[User]) extends BoardResponse
   case class PushActions(actions: Seq[ActionId]) extends BoardResponse
 
   case class ActionId(actionId: Int, turn: Int)
