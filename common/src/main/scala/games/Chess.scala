@@ -32,7 +32,7 @@ class Chess(val id: Int) extends Game {
     Colour.sourLemon, Colour.brightYarrow)
 
   def layout(playerId: Option[Int]) =
-    if (playerId.contains(1)) Layout.FlippedGrid
+    if (playerId.contains(1)) Layout.RotatedGrid
     else Layout.Grid
 
   def start(players: Int) = {

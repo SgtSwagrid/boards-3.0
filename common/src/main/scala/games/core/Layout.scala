@@ -18,7 +18,7 @@ object Layout {
     def shape(pos: Vec2) = Rectangle
   }
 
-  case object FlippedGrid extends Layout[Vec2] {
+  case object RotatedGrid extends Layout[Vec2] {
 
     def position(pos: Vec2) = -pos
     def size(pos: Vec2) = Vec2(1, 1)

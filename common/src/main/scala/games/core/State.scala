@@ -6,7 +6,8 @@ case class State[V <: Vec, P <: Piece, S] (
   pieces: Map[V, P] = Map[V, P](),
   players: List[PlayerState[P]] = List[PlayerState[P]](),
   stage: S = null,
-  turn: Int = 0
+  turn: Int = 0,
+  outcome: State.Outcome = State.Ongoing
 ) {
 
   def pieceSeq = pieces.toSeq
@@ -56,4 +57,9 @@ object State {
 
   type AnyState = State[_ <: Vec, _ <: Piece, _]
   type VState[V <: Vec] = State[V, _ <: Piece, _]
+
+  sealed trait Outcome
+  case object Ongoing extends Outcome
+  case class Winner(playerId: Int) extends Outcome
+  case object Draw extends Outcome
 }

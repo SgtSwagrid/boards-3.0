@@ -18,6 +18,15 @@ case class History[S <: AnyState] (
     val (action, state) = possibility
     History(state, Some(action), Some(this))
   }
+
+  def states: Seq[S] =
+    state +: previous.toSeq.flatMap(_.states)
+
+  def actions: Seq[Action] =
+    action ++: previous.toSeq.flatMap(_.actions)
+
+  def histories: Seq[History[S]] =
+    this +: previous.toSeq.flatMap(_.histories)
 }
 
 object History {

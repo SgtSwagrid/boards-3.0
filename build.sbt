@@ -12,18 +12,19 @@ lazy val server = (project in file("server"))
     pipelineStages := Seq(digest, gzip),
     compile in Compile := ((compile in Compile) dependsOn scalaJSPipeline).value,
     libraryDependencies ++= Seq(
-      "com.vmunier"        %% "scalajs-scripts"       % "1.1.4",
-      "com.typesafe.play"  %% "play-slick"            % "5.0.0",
-      "com.typesafe.play"  %% "play-slick-evolutions" % "5.0.0",
-      "com.typesafe.slick" %% "slick-codegen"         % "3.3.2",
+      "com.vmunier"            %% "scalajs-scripts"          % "1.1.4",
+      "com.typesafe.play"      %% "play-slick"               % "5.0.0",
+      "com.typesafe.play"      %% "play-slick-evolutions"    % "5.0.0",
+      "com.typesafe.slick"     %% "slick-codegen"            % "3.3.2",
       //"com.typesafe.play"  %% "play-json"             % "2.9.1",
       //"org.json4s"         %% "json4s-native"         % "3.5.5",
-      "io.circe"           %% "circe-core"            % "0.13.0",
-      "io.circe"           %% "circe-generic"         % "0.13.0",
-      "io.circe"           %% "circe-parser"          % "0.13.0",
-      "com.typesafe.slick" %% "slick-hikaricp"        % "3.3.3",
-      "mysql"              %  "mysql-connector-java"  % "8.0.21",
-      "org.mindrot"        %  "jbcrypt"               % "0.4",
+      "io.circe"               %% "circe-core"               % "0.13.0",
+      "io.circe"               %% "circe-generic"            % "0.13.0",
+      "io.circe"               %% "circe-parser"             % "0.13.0",
+      "com.typesafe.slick"     %% "slick-hikaricp"           % "3.3.3",
+      "mysql"                  %  "mysql-connector-java"     % "8.0.21",
+      "org.mindrot"            %  "jbcrypt"                  % "0.4",
+      "org.scala-lang.modules" %% "scala-collection-contrib" % "0.2.2",
       guice
     )
   )
@@ -35,18 +36,18 @@ lazy val client = (project in file("client"))
     name := "boards-client",
     scalacOptions += "-Ymacro-annotations",
     libraryDependencies ++= Seq(
-      "org.scala-js"      %%% "scalajs-dom"     % "1.1.0",
-      "org.querki"        %%% "jquery-facade"   % "2.0",
-      "me.shadaj"         %%% "slinky-core"     % "0.6.6",
-      "me.shadaj"         %%% "slinky-web"      % "0.6.6",
+      "org.scala-js"           %%% "scalajs-dom"              % "1.1.0",
+      "org.querki"             %%% "jquery-facade"            % "2.0",
+      "me.shadaj"              %%% "slinky-core"              % "0.6.6",
+      "me.shadaj"              %%% "slinky-web"               % "0.6.6",
       //"com.typesafe.play" %%  "play-json"       % "2.9.1",
       //"org.json4s"        %%  "json4s-native"   % "3.5.5",
-      "io.circe"          %%% "circe-core"      % "0.13.0",
-      "io.circe"          %%% "circe-generic"   % "0.13.0",
-      "io.circe"          %%% "circe-parser"    % "0.13.0",
-      "io.github.cquiroz" %%% "scala-java-time" % "2.1.0",
-      "com.vmunier"       %%  "scalajs-scripts" % "1.1.4"
-      
+      "io.circe"               %%% "circe-core"               % "0.13.0",
+      "io.circe"               %%% "circe-generic"            % "0.13.0",
+      "io.circe"               %%% "circe-parser"             % "0.13.0",
+      "io.github.cquiroz"      %%% "scala-java-time"          % "2.1.0",
+      "com.vmunier"            %%  "scalajs-scripts"          % "1.1.4",
+      "org.scala-lang.modules" %%% "scala-collection-contrib" % "0.2.2"
     )
   )
   .enablePlugins(ScalaJSPlugin, ScalaJSWeb)
@@ -58,10 +59,12 @@ lazy val common = crossProject(JSPlatform, JVMPlatform)
   .settings(
     name := "boards-common",
     libraryDependencies ++= Seq(
-      "io.circe"          %%% "circe-core"      % "0.13.0",
-      "io.circe"          %%% "circe-generic"   % "0.13.0",
-      "io.circe"          %%% "circe-parser"    % "0.13.0",
-      "io.github.cquiroz" %%% "scala-java-time" % "2.1.0"
+      "io.circe"               %%% "circe-core"               % "0.13.0",
+      "io.circe"               %%% "circe-generic"            % "0.13.0",
+      "io.circe"               %%% "circe-parser"             % "0.13.0",
+      "io.github.cquiroz"      %%% "scala-java-time"          % "2.1.0",
+      "org.scala-lang.modules" %%% "scala-collection-contrib" % "0.2.2"
+
       //"com.typesafe.play" %%% "play-json" % "2.9.1"
       //"org.json4s" %% "json4s-native" % "3.6.10"
     )

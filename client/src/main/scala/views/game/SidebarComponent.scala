@@ -1,5 +1,8 @@
 package views.game
 
+import scala.collection.decorators._
+
+import scala.scalajs.js
 import org.scalajs.dom._
 
 import slinky.core.StatelessComponent
@@ -11,10 +14,11 @@ import io.circe._, io.circe.generic.auto._, io.circe.parser._, io.circe.syntax._
 
 import models.{Board, Player, User}
 import models.protocols.BoardProtocol._
-import games.core.{History, State}
+import games.core.{Action, History, State}
 import games.core.History.AnyHistory
 import games.core.State.AnyState
 import views.menu.ButtonComponent
+import slinky.core.facade.ReactElement
 
 @react class SidebarComponent extends StatelessComponent {
 
@@ -36,15 +40,36 @@ import views.menu.ButtonComponent
     private def visibleHistory = props.visibleHistory.asInstanceOf[HistoryT]
 
     def render() = div(className := "sidebar grey darken-2 z-depth-2") (
+
       div(className := "sidebar-header grey darken-3") (
+
         div(className := "medium-text white-text") (props.board.game.name),
         div(className := "small-text grey-text") ("#" + props.board.id)
+
       ),
+      
       div(className := "sidebar-body") (
+
         (props.players zip props.users).map { case (player, user) =>
           PlayerComponent(props.board, player, user, visibleHistory, props.session)
         },
+
         br(),
+        
+        Option.when (
+          visibleHistory.state.outcome == State.Ongoing &&
+          props.users.isDefinedAt(visibleHistory.state.turn)
+        ) {
+
+          val user = props.users(visibleHistory.state.turn)
+          
+          span(className := "medium-text yellow-text text-darken-2") (
+            if (user == props.session.user) "Your Turn"
+            else s"${user.username}'s Turn"
+          )
+        },
+
+        br(), br(),
 
         if (props.board.setup) div (
 
@@ -72,24 +97,84 @@ import views.menu.ButtonComponent
             ButtonComponent("Delete Game", "/assets/img/remove.svg", true, delete)
           }
 
-        ) else div(),
+        ) else div()
         
-        br(),
+      ),
+      
+      div(className := "sidebar-nav blue-grey darken-4") (
 
         div(className := "center") (
-          img(className := "medium-icon", src := "/assets/img/icon/first.svg",
+          div (
+            className := "nav-icon",
             onClick := (_ => first())
+          ) (
+            img (
+              className := "medium-icon",
+              src := "/assets/img/icon/first.svg"
+            )
           ),
-          img(className := "medium-icon", src := "/assets/img/icon/previous.svg",
+          div (
+            className := "nav-icon",
             onClick := (_ => previous())
+          ) (
+            img (
+              className := "medium-icon",
+              src := "/assets/img/icon/previous.svg"
+            )
           ),
-          img(className := "medium-icon", src := "/assets/img/icon/next.svg",
+          div (
+            className := "nav-icon",
             onClick := (_ => next())
+          ) (
+            img (
+              className := "medium-icon",
+              src := "/assets/img/icon/next.svg"
+            )
           ),
-          img(className := "medium-icon", src := "/assets/img/icon/last.svg",
+          div (
+            className := "nav-icon",
             onClick := (_ => last())
+          ) (
+            img (
+              className := "medium-icon",
+              src := "/assets/img/icon/last.svg"
+            )
           )
         )
+      ),
+      
+      div(className := "sidebar-footer grey darken-3") (
+        
+        currentHistory.histories.reverse.flatMap { history =>
+          history.action.map { action =>
+
+            val textColour = s"${if (history == visibleHistory) "green" else "white"}-text"
+
+            span(className := s"small-text $textColour",
+                onClick := (_ => props.goto(history)),
+                style := js.Dynamic.literal(display = "inline-block")) (
+
+              action match {
+
+                case Action.Move(from, to) => {
+
+                  val piece = history.state.pieces(to.asInstanceOf[game.VecT])
+
+                  span (
+                    img (
+                      className := "small-text-icon",
+                      src := s"/assets/img/${piece.texture}"
+                    ),
+                    s"$from → $to",
+                  )
+                }
+
+                case _ => div()
+              }
+            )
+            
+          }.map(_.asInstanceOf[ReactElement])
+        }.intersperse(span(className := "small-text white-text")(" •"))
       )
     )
 
@@ -113,18 +198,14 @@ import views.menu.ButtonComponent
       props.session.socket.send(action.asJson.toString)
     }
 
-    private def histories(history: HistoryT) =
-      Iterator(history) ++
-      Iterator.unfold(history)(h => h.previous zip h.previous)
-
     private def first() =
-      props.goto(histories(visibleHistory).toSeq.last)
+      props.goto(visibleHistory.histories.last)
 
     private def previous() =
       visibleHistory.previous.foreach(props.goto)
 
     private def next() =
-      histories(currentHistory)
+      currentHistory.histories
         .find(_.previous.contains(props.visibleHistory))
         .foreach(props.goto)
 

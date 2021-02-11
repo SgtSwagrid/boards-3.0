@@ -24,6 +24,8 @@ case class Vec2(x: Int, y: Int) extends Vec {
     else if (dir.y == 0) (v - this).x / dir.x
     else (v - this).y / dir.y
   }
+
+  override def toString = s"${('A' + x).toChar}${y + 1}"
 }
 
 object Vec2 {

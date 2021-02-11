@@ -60,7 +60,8 @@ import games.core.State.AnyState
   
   private def selected = state.selected.asInstanceOf[Option[VecT]]
 
-  private def myTurn = props.session.player.exists(_.turnOrder == props.gameState.state.turn)
+  private def myTurn = props.session.player
+    .exists(_.turnOrder == props.gameState.state.turn)
   private def canPlay = props.board.ongoing && props.current && myTurn
 
   override def componentDidMount() = {
