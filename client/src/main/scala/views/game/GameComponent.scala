@@ -58,18 +58,24 @@ import games.core.History
     props.socket.onmessage = { (e: MessageEvent) =>
       decode[BoardResponse](e.data.toString).toOption.get match {
 
-        case SetBoard(board) =>
+        case SetBoard(board) => {
+
+          if (!board.isDefined) window.location.href = "/"
+
           setState(_.copy (
             board = board,
             currentHistory = board map { board =>
               History(board.game.start(state.players.size))
             }
           ))
+        }
 
         case SetPlayers(players, users) =>
+
           setState(_.copy (
             players = players,
             users = users,
+
             player = (players zip users)
               .find { case (_, user) => user.id == props.user.id }
               .map { case (player, _) => player }
@@ -101,11 +107,4 @@ import games.core.History
         }
       }
     }
-  }
-
-  @react class NoGameComponent extends StatelessComponent {
-
-    type Props = Unit
-
-    def render() = div("No board.")
-  }
+}
