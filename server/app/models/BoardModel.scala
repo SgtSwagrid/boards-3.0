@@ -138,7 +138,9 @@ class BoardModel(db: Database)(implicit ec: ExecutionContext) {
   def getUsers(boardId: String): Future[Seq[User]] = {
 
     val query = DBQuery.playersByBoard(boardId) join Users on (_.userId === _.id)
-    val users = query.map { case (_, users) => users }
+    val users = query
+      .sortBy { case (player, _) => player.turnOrder }
+      .map { case (_, user) => user }
     db.run(users.result)
   }
 
