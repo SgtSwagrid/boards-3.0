@@ -146,13 +146,15 @@ import slinky.core.facade.ReactElement
       div(className := "sidebar-footer grey darken-3") (
         
         currentHistory.histories.reverse.flatMap { history =>
-          history.action.map { action =>
+          history.action map { action =>
 
             val textColour = s"${if (history == visibleHistory) "green" else "white"}-text"
 
-            span(className := s"small-text $textColour",
-                onClick := (_ => props.goto(history)),
-                style := js.Dynamic.literal(display = "inline-block")) (
+            span (
+              className := s"small-text $textColour",
+              onClick := (_ => props.goto(history)),
+              style := js.Dynamic.literal(display = "inline-block")
+            ) (
 
               action match {
 
@@ -172,8 +174,7 @@ import slinky.core.facade.ReactElement
                 case _ => div()
               }
             )
-            
-          }.map(_.asInstanceOf[ReactElement])
+          }
         }.intersperse(span(className := "small-text white-text")(" •"))
       )
     )
