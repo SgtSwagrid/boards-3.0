@@ -15,6 +15,7 @@ import models.Board
 import models.protocols.BoardProtocol._
 import games.core.{Action, Colour, Game, History, State, Vec, Vec2}
 import games.core.State.AnyState
+import games.core.Piece
 
 @react class BoardComponent extends Component {
   
@@ -85,11 +86,13 @@ import games.core.State.AnyState
 
     if (canPlay) {
 
+      val placed = scene.location(pos).exists(tryPlace)
+
       val moved = (selected zip scene.location(pos)) exists {
         case (from, to) => tryMove(from, to)
       }
 
-      if (!moved) {
+      if (!moved && !placed) {
 
         val loc = scene.location(pos).filter { loc =>
           moves(gameState, loc).nonEmpty
@@ -110,6 +113,21 @@ import games.core.State.AnyState
     (selected zip scene.location(pos)) foreach {
       case (from, to) => tryMove(from, to)
     }
+  }
+
+  private def tryPlace(pos: VecT) = {
+
+    val place = game.actions(gameState).filter {
+      case Action.Place(to, _) => pos == to
+      case _ => false
+    }.headOption
+
+    place.foreach { place =>
+      takeAction(place)
+      setState(_.copy(selected = None))
+    }
+
+    place.isDefined
   }
 
   private def tryMove(from: VecT, to: VecT) = {
@@ -165,17 +183,16 @@ import games.core.State.AnyState
     canvas.width = canvas.clientWidth
     canvas.height = canvas.clientHeight
 
-    List().nonEmpty
-
     draw(scene)
   }
 
   private def draw(scene: SceneT): Unit = {
 
     scene.locations.foreach(drawTile(scene, _))
-
-    selected foreach { loc =>
-      drawHints(scene, loc)
+    
+    if (canPlay) drawHints(scene)
+    
+    selected foreach { loc =>   
       if (state.drag) drawDrag(scene, loc)
     }
   }
@@ -222,16 +239,21 @@ import games.core.State.AnyState
       highlighted.darken(25) else highlighted
   }
 
-  private def drawHints(scene: SceneT, loc: VecT) = {
-s
-    moves(gameState, loc) foreach { move =>
+  private def drawHints(scene: SceneT) = {
+
+    val locations = selected match {
+      case Some(selected) => moves(gameState, selected).map(_.to)
+      case None => places(gameState).map(_.pos)
+    }
+
+    locations foreach { loc =>
       
-      val Vec2(x, y) = scene.position(move.to) + scene.size(move.to) / 2
+      val Vec2(x, y) = scene.position(loc) + scene.size(loc) / 2
       
-      val tileSize = scene.size(move.to)
+      val tileSize = scene.size(loc)
       val size = (tileSize.x min tileSize.y) / 2
 
-      if (gameState.state.pieces.isDefinedAt(move.to)) {
+      if (gameState.state.pieces.isDefinedAt(loc)) {
 
         context.strokeStyle = Colour.naval.hex
         context.globalAlpha = 0.8
@@ -262,11 +284,21 @@ s
     context.drawImage(image, mx - width/2, my - height/2, width, height)
   }
 
+  /** Get all valid move actions at the current state. */
   private def moves(state: HistoryT, pos: VecT) = {
-    
+   
     game.actions(state).filter {
-      case Action.Move(from, to) => from == pos
+      case Action.Move(from, _) => from == pos
       case _ => false
     }.map(_.asInstanceOf[game.Move])
+  }
+
+  /** Get all valid place actions at the current state. */
+  private def places(state: HistoryT) = {
+    
+    game.actions(state).filter {
+      case Action.Place(_, _) => true
+      case _ => false
+    }.map(_.asInstanceOf[game.Place])
   }
 }

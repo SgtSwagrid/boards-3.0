@@ -27,7 +27,7 @@ class TicTacToe(val id: Int) extends Game {
 
   def layout(playerId: Option[Int]) = Layout.Grid
 
-  def start(players: Int) = new StateT().withPlayers(2).addPiece(Vec2(1,1), TicTacToePiece(0)).addPiece(Vec2(1,2), TicTacToePiece(1))
+  def start(players: Int) = new StateT().withPlayers(2)
 
   def next(history: HistoryT) = {
     
@@ -35,7 +35,9 @@ class TicTacToe(val id: Int) extends Game {
 
     val piece: TicTacToeBlank = TicTacToePiece(state.turn)
 
-    val successors: Map[Place, StateT] = manifold.positions.map(
+    val successors: Map[Place, StateT] = manifold.positions
+     .filter(state.empty)
+     .map(
         to => Action.Place(to, piece) -> state.addPiece(to, piece)
       ).toMap
 
