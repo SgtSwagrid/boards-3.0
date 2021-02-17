@@ -104,6 +104,54 @@ case class State[V <: Vec, P <: Piece, S] (
     )
   }
 
+  def moveablePieces: Iterable[(V, Piece.Moveable[V, State[V, P, S]])] = {
+
+    pieces filter {
+      case (_, piece) =>
+        piece.isInstanceOf[Piece.Moveable[_, _]]
+    } map {
+      case (pos, piece) =>
+        (pos, piece.asInstanceOf[Piece.Moveable[V, State[V, P, S]]])
+    }
+  }
+
+  def moves(playerId: Int): Seq[(Action.Move[V], State[V, P, S])] = {
+
+    piecesByOwner.get(playerId).toSeq flatMap {
+      pos => pieces(pos) match {
+
+        case p: Piece.Moveable[_, _] => {
+          val piece = p.asInstanceOf[Piece.Moveable[V, State[V, P, S]]]
+          piece.moves(this, pos)
+        }
+        case _ => Nil
+      }
+    }
+  }
+
+  def checked(pos: V): Boolean = {
+
+    val attackers = (0 until players.size)
+      .filter(_ != pieces(pos).ownerId)
+      .flatMap(piecesByOwner.get)
+
+    attackers exists { from =>
+      pieces(from) match {
+
+        case p: Piece.Moveable[_, _] => {
+          val piece = p.asInstanceOf[Piece.Moveable[V, State[V, P, S]]]
+          piece.movesNoRecurse(this, from)
+            .exists { case (a, s) => a.to == pos }
+        }
+        case _ => false
+      }
+    }
+  }
+
+  def mated(playerId: Int): Boolean = {
+    moves(playerId).isEmpty
+  }
+
   def endTurn(skip: Int = 1) = {
     copy(turn = (turn + skip) % players.size)
   }
