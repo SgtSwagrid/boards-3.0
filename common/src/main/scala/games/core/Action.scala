@@ -10,8 +10,8 @@ object Action {
 
   case class Move[V <: Vec](from: V, to: V) extends Action {
 
-    def actuate[S <: State.VState[V]](state: S) =
-      state.movePiece(from, to).asInstanceOf[S]
+    def doMove[S <: State.VState[V]](history: History[S]) =
+      history.push(this, history.state.movePiece(from, to).asInstanceOf[S])
 
     def inBounds(manifold: Manifold[V]) =
       manifold.inBounds(to)

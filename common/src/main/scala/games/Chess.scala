@@ -101,23 +101,23 @@ class Chess(val id: Int) extends Game {
     val state = history.state
 
     moves(state)
-      .map(m => history.push(m, state.pieces(m.from).doMove(state, m)))
+      .map(_.doMove(history))
       .filter(h => !check(h.state, state.turn))
   }
 
   private def moves(state: StateT) = {
 
     state.pieces.flatMap {
-      case pos -> piece =>
 
-        if (piece.ownerId == state.turn) {
+      case pos -> piece
+          if piece.ownerId == state.turn =>
 
-          piece.moves(state, pos)
-            .filter(manifold.inBounds)
-            .filterNot(state.friendly)
-            .map(Action.Move(pos, _))
+        piece.moves(state, pos)
+          .filter(manifold.inBounds)
+          .filterNot(state.friendly)
+          .map(Action.Move(pos, _))
 
-        } else None
+      case _ => None
     }
   }
 
