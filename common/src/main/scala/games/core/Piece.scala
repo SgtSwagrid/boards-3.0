@@ -14,18 +14,18 @@ object Piece {
 
       generateMoves(state, pos)
         .map(Action.Move(pos, _))
-        .filter(a => validateMove(state, a))
+        .filter(a => allowMove(state, a))
         .map(a => (state, applyMove(state, a), a))
-        .filter { case (s1, s2, a) => postValidateMove(s1, s2, a) }
+        .filter { case (s1, s2, a) => validateMove(s1, s2, a) }
         .map { case (_, s2, a) => a -> s2 }
     }
 
-    final def movesNoRecurse(state: S, pos: V): Seq[(Action.Move[V], S)] = {
+    final def sight(state: S, pos: V): Seq[V] = {
 
       generateMoves(state, pos)
         .map(Action.Move(pos, _))
-        .filter(a => validateMove(state, a))
-        .map(a => a -> applyMove(state, a))
+        .filter(a => allowMove(state, a))
+        .map(_.to)
     }
 
     final def successors(history: History[S], pos: V): Seq[History[S]] = {
@@ -34,7 +34,7 @@ object Piece {
 
     protected def generateMoves(state: S, pos: V): Seq[V]
 
-    protected def validateMove(state: S, move: Action.Move[V]): Boolean = true
+    protected def allowMove(state: S, move: Action.Move[V]): Boolean = true
 
     protected def applyMove(state: S, move: Action.Move[V]): S = {
       
@@ -48,7 +48,7 @@ object Piece {
         .asInstanceOf[S]
     }
 
-    protected def postValidateMove(before: S, after: S,
+    protected def validateMove(before: S, after: S,
         action: Action.Move[V]): Boolean = true
 
     protected def endTurn(state: S, move: Action.Move[V]): Boolean = true

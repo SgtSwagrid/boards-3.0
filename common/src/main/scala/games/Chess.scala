@@ -25,11 +25,11 @@ class Chess(val id: Int) extends Game {
     val colour = byOwner("white", "black")
     val texture = s"chess/${colour}_$name.png"
 
-    override def validateMove(state: StateT, move: Action.Move[Vec2]) = {
+    override def allowMove(state: StateT, move: Action.Move[Vec2]) = {
       manifold.inBounds(move.to) && !state.friendly(move.to)
     }
 
-    override def postValidateMove(before: StateT, after: StateT,
+    override def validateMove(before: StateT, after: StateT,
         move: Action.Move[Vec2]) = {
 
       val kingPos = after.occurences.get(King(before.turn)).head

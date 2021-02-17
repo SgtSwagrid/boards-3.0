@@ -140,8 +140,7 @@ case class State[V <: Vec, P <: Piece, S] (
 
         case p: Piece.Moveable[_, _] => {
           val piece = p.asInstanceOf[Piece.Moveable[V, State[V, P, S]]]
-          piece.movesNoRecurse(this, from)
-            .exists { case (a, s) => a.to == pos }
+          piece.sight(this, from).contains(pos)
         }
         case _ => false
       }
