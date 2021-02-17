@@ -158,6 +158,17 @@ import slinky.core.facade.ReactElement
 
               action match {
 
+                case Action.Place(pos, piece) => {
+
+                  span (
+                    img (
+                      className := "small-text-icon",
+                      src := s"/assets/img/${piece.texture}"
+                    ),
+                    s"$pos",
+                  )
+                }
+
                 case Action.Move(from, to) => {
 
                   val piece = history.state.pieces(to.asInstanceOf[game.VecT])
