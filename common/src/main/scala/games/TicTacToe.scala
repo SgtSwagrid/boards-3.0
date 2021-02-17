@@ -1,8 +1,8 @@
 package games
 
 import games.core.{
-  Action, Background, Colour, Game,
-  Layout, Manifold, Piece, State, Vec2
+  Action, Background, Colour, Frontier, Game,
+  History, Layout, Manifold, Piece, State, Vec2
 }
 
 class TicTacToe(val id: Int) extends Game {

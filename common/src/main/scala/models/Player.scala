@@ -7,7 +7,7 @@ case class Player (
   turnOrder: Int,
   isOwner: Boolean = false,
   time: Int = 0,
-  resignOffer: Boolean = false,
-  drawOffer: Boolean = false,
-  undoOffer: Boolean = false
+  resign: Boolean = false,
+  draw: Boolean = false,
+  revert: Option[Int] = None
 )

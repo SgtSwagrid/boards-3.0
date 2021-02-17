@@ -42,6 +42,9 @@ object Vec2 {
   val SW = Vec2(-1, -1)
   val NW = Vec2(-1, 1)
 
+  val horz = Seq(E, W)
+  val vert = Seq(N, S)
+
   val orthogonal = Seq(N, E, S, W)
   val diagonal = Seq(NE, SE, SW, NW)
   val cardinal = orthogonal ++ diagonal
