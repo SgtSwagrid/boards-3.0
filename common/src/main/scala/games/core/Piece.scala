@@ -38,19 +38,12 @@ object Piece {
 
     protected def applyMove(state: S, move: Action.Move[V]): S = {
       
-      if (endTurn(state, move)) state
-        .movePiece(move.from, move.to)
-        .endTurn()
-        .asInstanceOf[S]
-
-      else state
+      state
         .movePiece(move.from, move.to)
         .asInstanceOf[S]
     }
 
     protected def validateMove(before: S, after: S,
         action: Action.Move[V]): Boolean = true
-
-    protected def endTurn(state: S, move: Action.Move[V]): Boolean = true
   }
 }

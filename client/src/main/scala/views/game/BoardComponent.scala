@@ -14,7 +14,7 @@ import io.circe._, io.circe.generic.auto._, io.circe.parser._, io.circe.syntax._
 import models.Board
 import models.protocols.BoardProtocol._
 import games.core.{Action, Colour, Game, History, State, Vec, Vec2}
-import games.core.State.AnyState
+import games.core.State.{AnyState, Ongoing}
 import games.core.Piece
 
 @react class BoardComponent extends Component {
@@ -61,9 +61,13 @@ import games.core.Piece
   
   private def selected = state.selected.asInstanceOf[Option[VecT]]
 
+  private def ongoing = props.board.ongoing &&
+    props.gameState.state.outcome == Ongoing
+
   private def myTurn = props.session.player
     .exists(_.turnOrder == props.gameState.state.turn)
-  private def canPlay = props.board.ongoing && props.current && myTurn
+
+  private def canPlay = ongoing && myTurn && props.current
 
   override def componentDidMount() = {
 

@@ -26,13 +26,16 @@ abstract class Game {
 
   def start(players: Int): StateT
   
-  def next(history: HistoryT): Iterable[HistoryT]
+  def next(history: HistoryT): Iterable[(Action, StateT)]
+
+  def successors(history: HistoryT): Iterable[HistoryT] =
+    next(history).map(history.push)
 
   def actions(history: HistoryT): Iterable[Action] =
-    next(history).flatMap(_.action)
+    successors(history).flatMap(_.action)
 
   def takeAction(history: HistoryT, action: Action): Option[HistoryT] =
-    next(history).find(_.action == Some(action))
+    successors(history).find(_.action == Some(action))
 
   def validateAction(history: HistoryT, action: Action): Boolean =
     takeAction(history, action).isDefined

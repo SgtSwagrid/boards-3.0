@@ -101,10 +101,20 @@ class Chess(val id: Int) extends Game {
       .addPieces(manifold.row(6), List.fill(8)(Pawn(1)))
   }
 
-  def next(history: HistoryT): Iterable[HistoryT] = {
+  def next(history: HistoryT) = {
 
-    val state = history.state
-    state.moves(state.turn).map(history.push)
+    history.state.moves().toMap mapValues { state =>
+
+      if (state.mated(state.nextTurn())) {
+
+        val kingPos = state.occurences.get(King(state.nextTurn())).head
+        val outcome = if (state.checked(kingPos))
+          State.Winner(state.turn) else State.Draw
+        
+        state.endGame(outcome)
+
+      } else state.endTurn()
+    }
   }
 
   type VecT = Vec2

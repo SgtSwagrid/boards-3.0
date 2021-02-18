@@ -43,7 +43,6 @@ class TicTacToe(val id: Int) extends Game {
 
     successors
       .mapValues(_.endTurn())
-      .map(history.push)
   
   }
 }

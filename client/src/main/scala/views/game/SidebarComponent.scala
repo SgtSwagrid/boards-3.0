@@ -55,18 +55,40 @@ import slinky.core.facade.ReactElement
         },
 
         br(),
-        
-        Option.when (
-          visibleHistory.state.outcome == State.Ongoing &&
-          props.users.isDefinedAt(visibleHistory.state.turn)
-        ) {
 
-          val user = props.users(visibleHistory.state.turn)
-          
-          span(className := "medium-text yellow-text text-darken-2") (
-            if (user == props.session.user) "Your Turn"
-            else s"${user.username}'s Turn"
-          )
+        visibleHistory.state.outcome match {
+
+          case State.Ongoing => {
+
+            val turn = visibleHistory.state.turn
+
+            Option.when(props.users.isDefinedAt(turn)) {
+
+              val user = props.users(turn)
+              
+              span(className := "medium-text yellow-text text-darken-2") (
+                if (user == props.session.user) "Your Turn"
+                else s"${user.username}'s Turn"
+              )
+            }
+          }
+
+          case State.Winner(winnerId) => {
+
+            Option.when(props.users.isDefinedAt(winnerId)) {
+
+              val user = props.users(winnerId)
+
+              span(className := "medium-text yellow-text text-darken-2") (
+                if (user == props.session.user) "You Won"
+                else s"${user.username} Won"
+              )
+            }
+          }
+
+          case State.Draw => {
+            span(className := "medium-text yellow-text text-darken-2") ("Draw")
+          }
         },
 
         br(), br(),

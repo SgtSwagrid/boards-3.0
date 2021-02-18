@@ -91,7 +91,7 @@ import games.core.History
               val newState = actions.foldLeft(oldState) { 
                 (gameState, action) =>
 
-                  val states = board.game.next(gameState).toSeq
+                  val states = board.game.successors(gameState).toSeq
 
                   if (states.isDefinedAt(action.actionId)
                       && gameState.state.turn == action.turn)

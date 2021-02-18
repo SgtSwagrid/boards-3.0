@@ -111,18 +111,18 @@ case class State[V <: Vec, P <: Piece, S] (
         piece.isInstanceOf[Piece.Moveable[_, _]]
     } map {
       case (pos, piece) =>
-        (pos, piece.asInstanceOf[Piece.Moveable[V, State[V, P, S]]])
+        pos -> piece.asInstanceOf[Piece.Moveable[V, State[V, P, S]]]
     }
   }
 
-  def moves(playerId: Int): Seq[(Action.Move[V], State[V, P, S])] = {
+  def moves(playerId: Int = turn): Iterable[(Action.Move[V], State[V, P, S])] = {
 
-    piecesByOwner.get(playerId).toSeq flatMap {
+    piecesByOwner.get(playerId).view.flatMap {
       pos => pieces(pos) match {
 
         case p: Piece.Moveable[_, _] => {
           val piece = p.asInstanceOf[Piece.Moveable[V, State[V, P, S]]]
-          piece.moves(this, pos)
+          piece.moves(copy(turn = playerId), pos)
         }
         case _ => Nil
       }
@@ -140,14 +140,14 @@ case class State[V <: Vec, P <: Piece, S] (
 
         case p: Piece.Moveable[_, _] => {
           val piece = p.asInstanceOf[Piece.Moveable[V, State[V, P, S]]]
-          piece.sight(this, from).contains(pos)
+          piece.sight(copy(turn = piece.ownerId), from).contains(pos)
         }
         case _ => false
       }
     }
   }
 
-  def mated(playerId: Int): Boolean = {
+  def mated(playerId: Int = turn): Boolean = {
     moves(playerId).isEmpty
   }
 
@@ -178,7 +178,7 @@ case class State[V <: Vec, P <: Piece, S] (
   def friendly(pos: V) = pieces.get(pos).exists(_.ownerId == turn)
   def enemy(pos: V) = pieces.get(pos).exists(_.ownerId != turn)
 
-  def nextPlayerId(skip: Int = 1) = (turn + skip) % players.size
+  def nextTurn(skip: Int = 1) = (turn + skip) % players.size
 }
 
 case class PlayerState[P <: Piece] (
