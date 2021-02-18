@@ -8,9 +8,10 @@ trait Piece {
 
 object Piece {
 
-  trait Moveable[V <: Vec, S <: State[V, _ <: Piece, _]] extends Piece {
+  trait Moveable[V <: Vec, P <: Piece] extends Piece {
 
-    final def moves(state: S, pos: V): Seq[(Action.Move[V], S)] = {
+    final def moves(state: State[V, P], pos: V):
+        Seq[(Action.Move[V], State[V, P])] = {
 
       generateMoves(state, pos)
         .map(Action.Move(pos, _))
@@ -20,7 +21,7 @@ object Piece {
         .map { case (_, s2, a) => a -> s2 }
     }
 
-    final def sight(state: S, pos: V): Seq[V] = {
+    final def sight(state: State[V, P], pos: V): Seq[V] = {
 
       generateMoves(state, pos)
         .map(Action.Move(pos, _))
@@ -28,22 +29,20 @@ object Piece {
         .map(_.to)
     }
 
-    final def successors(history: History[S], pos: V): Seq[History[S]] = {
-      moves(history.state, pos).map(history.push)
-    }
+    protected def generateMoves(state: State[V, P], pos: V): Seq[V]
 
-    protected def generateMoves(state: S, pos: V): Seq[V]
+    protected def allowMove(state: State[V, P], move: Action.Move[V]):
+        Boolean = true
 
-    protected def allowMove(state: S, move: Action.Move[V]): Boolean = true
-
-    protected def applyMove(state: S, move: Action.Move[V]): S = {
+    protected def applyMove(state: State[V, P], move: Action.Move[V]): 
+        State[V, P] = {
       
       state
         .movePiece(move.from, move.to)
-        .asInstanceOf[S]
+        .asInstanceOf[State[V, P]]
     }
 
-    protected def validateMove(before: S, after: S,
+    protected def validateMove(before: State[V, P], after: State[V, P],
         action: Action.Move[V]): Boolean = true
   }
 }

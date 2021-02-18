@@ -4,7 +4,7 @@ import scala.collection.decorators._
 import scala.collection.immutable.MultiDict
 import games.core.{Action, Piece, Vec}
 
-case class State[V <: Vec, P <: Piece, S] (
+case class State[V <: Vec, P <: Piece] (
 
   pieces: Map[V, P] = Map[V, P](),
   piecesByOwner: MultiDict[Int, V] = MultiDict[Int, V](),
@@ -15,12 +15,15 @@ case class State[V <: Vec, P <: Piece, S] (
 
   players: List[PlayerState[P]] = List[PlayerState[P]](),
 
-  stage: S = null,
+  stage: State.Stage = null,
   turn: Int = 0,
-  outcome: State.Outcome = State.Ongoing
+  outcome: State.Outcome = State.Ongoing,
+
+  previous: Option[State[V, P]] = None,
+  action: Option[Action] = None
 ) {
 
-  def addPiece(pos: V, piece: P) = {
+  def addPiece(pos: V, piece: P): State[V, P] = {
 
     val previous = pieces.get(pos)
 
@@ -42,7 +45,7 @@ case class State[V <: Vec, P <: Piece, S] (
     )
   }
 
-  def addPieces(pieces: Iterable[(V, P)]): State[V, P, S] = {
+  def addPieces(pieces: Iterable[(V, P)]): State[V, P] = {
 
     pieces.toList match {
       case (pos, piece) :: tail =>
@@ -51,15 +54,15 @@ case class State[V <: Vec, P <: Piece, S] (
     }
   }
 
-  def addPieces(pos: Seq[V], pieces: Seq[P]): State[V, P, S] = {
+  def addPieces(pos: Seq[V], pieces: Seq[P]): State[V, P] = {
     addPieces(pos zip pieces)
   }
 
-  def movePiece(from: V, to: V): State[V, P, S] = {
+  def movePiece(from: V, to: V): State[V, P] = {
     removePiece(from).addPiece(to, pieces(from))
   }
 
-  def removePiece(pos: V) = {
+  def removePiece(pos: V): State[V, P] = {
 
     val piece = pieces(pos)
 
@@ -70,7 +73,7 @@ case class State[V <: Vec, P <: Piece, S] (
     )
   }
 
-  def addLabel(pos: Seq[V], label: State.Label) = {
+  def addLabel(pos: Seq[V], label: State.Label): State[V, P] = {
 
     copy (
       labels = labels concat pos.map(_ -> label),
@@ -78,7 +81,7 @@ case class State[V <: Vec, P <: Piece, S] (
     )
   }
 
-  def removeLabel(pos: V, label: State.Label) = {
+  def removeLabel(pos: V, label: State.Label): State[V, P] = {
 
     copy (
       labels = labels - (pos -> label),
@@ -86,7 +89,7 @@ case class State[V <: Vec, P <: Piece, S] (
     )
   }
 
-  def purgeLabel(label: State.Label) = {
+  def purgeLabel(label: State.Label): State[V, P] = {
 
     copy (
       labels = labelOccurences.get(label)
@@ -95,7 +98,7 @@ case class State[V <: Vec, P <: Piece, S] (
     )
   }
 
-  def clearLabels(pos: V) = {
+  def clearLabels(pos: V): State[V, P] = {
 
     copy (
       labels = labels -* pos,
@@ -104,74 +107,19 @@ case class State[V <: Vec, P <: Piece, S] (
     )
   }
 
-  def moveablePieces: Iterable[(V, Piece.Moveable[V, State[V, P, S]])] = {
-
-    pieces filter {
-      case (_, piece) =>
-        piece.isInstanceOf[Piece.Moveable[_, _]]
-    } map {
-      case (pos, piece) =>
-        pos -> piece.asInstanceOf[Piece.Moveable[V, State[V, P, S]]]
-    }
-  }
-
-  def moves(playerId: Int = turn): Iterable[(Action.Move[V], State[V, P, S])] = {
-
-    piecesByOwner.get(playerId).view.flatMap {
-      pos => pieces(pos) match {
-
-        case p: Piece.Moveable[_, _] => {
-          val piece = p.asInstanceOf[Piece.Moveable[V, State[V, P, S]]]
-          piece.moves(copy(turn = playerId), pos)
-        }
-        case _ => Nil
-      }
-    }
-  }
-
-  def checked(pos: V): Boolean = {
-
-    val attackers = (0 until players.size)
-      .filter(_ != pieces(pos).ownerId)
-      .flatMap(piecesByOwner.get)
-
-    attackers exists { from =>
-      pieces(from) match {
-
-        case p: Piece.Moveable[_, _] => {
-          val piece = p.asInstanceOf[Piece.Moveable[V, State[V, P, S]]]
-          piece.sight(copy(turn = piece.ownerId), from).contains(pos)
-        }
-        case _ => false
-      }
-    }
-  }
-
-  def mated(playerId: Int = turn): Boolean = {
-    moves(playerId).isEmpty
-  }
-
-  def endTurn(skip: Int = 1) = {
+  def endTurn(skip: Int = 1): State[V, P] = {
     copy(turn = (turn + skip) % players.size)
   }
 
-  def endGame(outcome: State.Outcome) = {
+  def endGame(outcome: State.Outcome): State[V, P] = {
     copy(outcome = outcome)
   }
 
-  def withPlayers(numPlayers: Int) = {
+  def withPlayers(numPlayers: Int): State[V, P] = {
     copy(players = List.fill(numPlayers)(PlayerState[P]()))
   }
 
   def byPlayer[T](options: T*) = options(turn)
-
-  def piecesBy(f: Piece => Boolean) = {
-    pieces filter { case _ -> piece => f(piece) }
-  }
-
-  def piecesByOwner(ownerId: Int) = {
-    piecesBy(_.ownerId == ownerId)
-  }
 
   def empty(pos: V) = !pieces.isDefinedAt(pos)
   def occupied(pos: V) = pieces.isDefinedAt(pos)
@@ -179,6 +127,10 @@ case class State[V <: Vec, P <: Piece, S] (
   def enemy(pos: V) = pieces.get(pos).exists(_.ownerId != turn)
 
   def nextTurn(skip: Int = 1) = (turn + skip) % players.size
+
+  def history: Seq[State[V, P]] = {
+    this +: previous.toSeq.flatMap(_.history)
+  }
 }
 
 case class PlayerState[P <: Piece] (
@@ -188,8 +140,7 @@ case class PlayerState[P <: Piece] (
 
 object State {
 
-  type AnyState = State[_ <: Vec, _ <: Piece, _]
-  type VState[V <: Vec] = State[V, _ <: Piece, _]
+  type AnyState = State[_ <: Vec, _ <: Piece]
 
   sealed trait Outcome
   case object Ongoing extends Outcome
@@ -197,4 +148,6 @@ object State {
   case object Draw extends Outcome
 
   trait Label
+
+  trait Stage
 }

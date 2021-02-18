@@ -12,7 +12,8 @@ import io.circe._, io.circe.generic.auto._, io.circe.parser._, io.circe.syntax._
 
 import models.{Board, Player, User}
 import models.protocols.BoardProtocol._
-import games.core.History
+
+import games.core.State.AnyState
 
 @react class GameComponent extends Component {
 
@@ -26,8 +27,8 @@ import games.core.History
     board: Option[Board],
     players: Seq[Player],
     users: Seq[User],
-    currentHistory: Option[Any],
-    visibleHistory: Option[Any],
+    currentState: Option[AnyState],
+    visibleState: Option[AnyState],
     player: Option[Player]
   )
 
@@ -37,20 +38,20 @@ import games.core.History
 
   def render() = for {
     board <- state.board
-    currentHistory <- state.currentHistory
-    visibleHistory <- state.visibleHistory
+    currentState <- state.currentState
+    visibleState <- state.visibleState
   } yield {
 
     div (
       SidebarComponent(board, state.players, state.users,
-        currentHistory.asInstanceOf[board.game.HistoryT],
-        visibleHistory.asInstanceOf[board.game.HistoryT],
+        currentState.asInstanceOf[board.game.StateT],
+        visibleState.asInstanceOf[board.game.StateT],
         session,
-        h => setState(_.copy(visibleHistory = Some(h)))),
+        s => setState(_.copy(visibleState = Some(s)))),
 
       BoardComponent(board,
-        visibleHistory.asInstanceOf[board.game.HistoryT],
-        currentHistory == visibleHistory, session)
+        visibleState.asInstanceOf[board.game.StateT],
+        currentState == visibleState, session)
     )
   }
 
@@ -64,8 +65,8 @@ import games.core.History
 
           setState(_.copy (
             board = board,
-            currentHistory = board map { board =>
-              History(board.game.start(state.players.size))
+            currentState = board map { board =>
+              board.game.start(state.players.size)
             }
           ))
         }
@@ -83,10 +84,10 @@ import games.core.History
 
         case PushActions(actions) => {
 
-          (state.board zip state.currentHistory) foreach {
-            case (board, history) =>
+          (state.board zip state.currentState) foreach {
+            case (board, state) =>
 
-              val oldState = history.asInstanceOf[board.game.HistoryT]
+              val oldState = state.asInstanceOf[board.game.StateT]
 
               val newState = actions.foldLeft(oldState) { 
                 (gameState, action) =>
@@ -94,14 +95,14 @@ import games.core.History
                   val states = board.game.successors(gameState).toSeq
 
                   if (states.isDefinedAt(action.actionId)
-                      && gameState.state.turn == action.turn)
+                      && gameState.turn == action.turn)
                     states(action.actionId)
                   else gameState
               }
 
               setState(_.copy (
-                currentHistory = Some(newState),
-                visibleHistory = Some(newState)
+                currentState = Some(newState),
+                visibleState = Some(newState)
               ))
           }
         }

@@ -13,7 +13,7 @@ import io.circe._, io.circe.generic.auto._, io.circe.parser._, io.circe.syntax._
 
 import models.Board
 import models.protocols.BoardProtocol._
-import games.core.{Action, Colour, Game, History, State, Vec, Vec2}
+import games.core.{Action, Colour, Game, State, Vec, Vec2}
 import games.core.State.{AnyState, Ongoing}
 import games.core.Piece
 
@@ -23,7 +23,7 @@ import games.core.Piece
 
   case class Props (
     board: Board,
-    gameState: History[_ <: AnyState],
+    gameState: AnyState,
     current: Boolean,
     session: BoardSession
   )
@@ -53,19 +53,19 @@ import games.core.Piece
   private def layout = game.layout(props.session.player.map(_.turnOrder))
   private lazy val background = game.background
   
-  private def gameState = props.gameState.asInstanceOf[HistoryT]
+  private def gameState = props.gameState.asInstanceOf[StateT]
 
   private type VecT = game.VecT
-  private type HistoryT = game.HistoryT
+  private type StateT = game.StateT
   private type SceneT = Scene[VecT]
   
   private def selected = state.selected.asInstanceOf[Option[VecT]]
 
   private def ongoing = props.board.ongoing &&
-    props.gameState.state.outcome == Ongoing
+    gameState.outcome == Ongoing
 
   private def myTurn = props.session.player
-    .exists(_.turnOrder == props.gameState.state.turn)
+    .exists(_.turnOrder == props.gameState.turn)
 
   private def canPlay = ongoing && myTurn && props.current
 
@@ -86,9 +86,9 @@ import games.core.Piece
 
   private def mouseDown(pos: Vec2) = {
 
-    val scene = new SceneT(game, gameState.state, layout, state.canvasSize)
-
     if (canPlay) {
+
+      val scene = new SceneT(game, gameState, layout, state.canvasSize)
 
       val placed = scene.location(pos).exists(tryPlace)
 
@@ -112,7 +112,7 @@ import games.core.Piece
 
     setState(_.copy(drag = false))
 
-    val scene = new SceneT(game, gameState.state, layout, state.canvasSize)
+    val scene = new SceneT(game, gameState, layout, state.canvasSize)
 
     (selected zip scene.location(pos)) foreach {
       case (from, to) => tryMove(from, to)
@@ -126,7 +126,7 @@ import games.core.Piece
       case _ => false
     }.headOption
 
-    place.foreach { place =>
+    place foreach { place =>
       takeAction(place)
       setState(_.copy(selected = None))
     }
@@ -180,9 +180,8 @@ import games.core.Piece
       if (canPlay) autoSelect()
       else setState(_.copy(selected = None, drag = false))
     }
-    if (props != prevProps && canPlay) autoSelect()
 
-    val scene = new SceneT(game, gameState.state, layout, state.canvasSize)
+    val scene = new SceneT(game, gameState, layout, state.canvasSize)
 
     canvas.width = canvas.clientWidth
     canvas.height = canvas.clientHeight
@@ -211,7 +210,7 @@ import games.core.Piece
 
     context.fillRect(x, y, width, height)
     
-    gameState.state.pieces.get(loc) foreach { piece =>
+    gameState.pieces.get(loc) foreach { piece =>
       if (!(selected == Some(loc) && state.drag)) {
 
         val image = images.image(piece.texture)
@@ -257,7 +256,7 @@ import games.core.Piece
       val tileSize = scene.size(loc)
       val size = (tileSize.x min tileSize.y) / 2
 
-      if (gameState.state.pieces.isDefinedAt(loc)) {
+      if (gameState.pieces.isDefinedAt(loc)) {
 
         context.strokeStyle = Colour.naval.hex
         context.globalAlpha = 0.8
@@ -280,7 +279,7 @@ import games.core.Piece
   private def drawDrag(scene: SceneT, loc: VecT) = {
 
     val Vec2(width, height) = scene.size(loc)
-    val piece = gameState.state.pieces(loc)
+    val piece = gameState.pieces(loc)
     val image = images.image(piece.texture)
 
     val Vec2(mx, my) = state.cursor
@@ -288,21 +287,18 @@ import games.core.Piece
     context.drawImage(image, mx - width/2, my - height/2, width, height)
   }
 
-  /** Get all valid move actions at the current state. */
-  private def moves(state: HistoryT, pos: VecT) = {
+  private def moves(state: StateT, pos: VecT) = {
    
     game.actions(state).filter {
       case Action.Move(from, _) => from == pos
       case _ => false
-    }.map(_.asInstanceOf[game.Move])
+    }.map(_.asInstanceOf[Action.Move[game.VecT]])
   }
 
-  /** Get all valid place actions at the current state. */
-  private def places(state: HistoryT) = {
+  private def places(state: StateT) = {
     
-    game.actions(state).filter {
-      case Action.Place(_, _) => true
-      case _ => false
-    }.map(_.asInstanceOf[game.Place])
+    game.actions(state)
+      .filter(_.isInstanceOf[Action.Place[_]])
+      .map(_.asInstanceOf[Action.Place[game.VecT]])
   }
 }

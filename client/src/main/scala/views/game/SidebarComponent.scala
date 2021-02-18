@@ -14,8 +14,7 @@ import io.circe._, io.circe.generic.auto._, io.circe.parser._, io.circe.syntax._
 
 import models.{Board, Player, User}
 import models.protocols.BoardProtocol._
-import games.core.{Action, History, State}
-import games.core.History.AnyHistory
+import games.core.{Action, State}
 import games.core.State.AnyState
 import views.menu.ButtonComponent
 import slinky.core.facade.ReactElement
@@ -26,18 +25,18 @@ import slinky.core.facade.ReactElement
       board: Board,
       players: Seq[Player],
       users: Seq[User],
-      currentHistory: AnyHistory,
-      visibleHistory: AnyHistory,
+      currentState: AnyState,
+      visibleState: AnyState,
       session: BoardSession,
-      goto: AnyHistory => Unit
+      goto: AnyState => Unit
     )
 
     private lazy val game = props.board.game
 
-    private type HistoryT = game.HistoryT
+    private type StateT = game.StateT
 
-    private def currentHistory = props.currentHistory.asInstanceOf[HistoryT]
-    private def visibleHistory = props.visibleHistory.asInstanceOf[HistoryT]
+    private def currentState = props.currentState.asInstanceOf[StateT]
+    private def visibleState = props.visibleState.asInstanceOf[StateT]
 
     def render() = div(className := "sidebar grey darken-2 z-depth-2") (
 
@@ -51,16 +50,16 @@ import slinky.core.facade.ReactElement
       div(className := "sidebar-body") (
 
         (props.players zip props.users).map { case (player, user) =>
-          PlayerComponent(props.board, player, user, visibleHistory, props.session)
+          PlayerComponent(props.board, player, user, visibleState, props.session)
         },
 
         br(),
 
-        visibleHistory.state.outcome match {
+        visibleState.outcome match {
 
           case State.Ongoing => {
 
-            val turn = visibleHistory.state.turn
+            val turn = visibleState.turn
 
             Option.when(props.users.isDefinedAt(turn)) {
 
@@ -167,14 +166,14 @@ import slinky.core.facade.ReactElement
       
       div(className := "sidebar-footer grey darken-3") (
         
-        currentHistory.histories.reverse.flatMap { history =>
-          history.action map { action =>
+        currentState.history.reverse.flatMap { state =>
+          state.action map { action =>
 
-            val textColour = s"${if (history == visibleHistory) "green" else "white"}-text"
+            val textColour = s"${if (state == visibleState) "green" else "white"}-text"
 
             span (
               className := s"small-text $textColour",
-              onClick := (_ => props.goto(history)),
+              onClick := (_ => props.goto(state)),
               style := js.Dynamic.literal(display = "inline-block")
             ) (
 
@@ -193,7 +192,7 @@ import slinky.core.facade.ReactElement
 
                 case Action.Move(from, to) => {
 
-                  val piece = history.state.pieces(to.asInstanceOf[game.VecT])
+                  val piece = state.pieces(to.asInstanceOf[game.VecT])
 
                   span (
                     img (
@@ -233,18 +232,18 @@ import slinky.core.facade.ReactElement
     }
 
     private def first() =
-      props.goto(visibleHistory.histories.last)
+      props.goto(visibleState.history.last)
 
     private def previous() =
-      visibleHistory.previous.foreach(props.goto)
+      visibleState.previous.foreach(props.goto)
 
     private def next() =
-      currentHistory.histories
-        .find(_.previous.contains(props.visibleHistory))
+      currentState.history
+        .find(_.previous.contains(props.visibleState))
         .foreach(props.goto)
 
     private def last() =
-      props.goto(currentHistory)
+      props.goto(currentState)
   }
 
   @react class PlayerComponent extends StatelessComponent {
@@ -253,17 +252,15 @@ import slinky.core.facade.ReactElement
       board: Board,
       player: Player,
       user: User,
-      history: AnyHistory,
+      state: AnyState,
       session: BoardSession
     )
 
     private lazy val game = props.board.game
 
     private type StateT = game.StateT
-    private type HistoryT = game.HistoryT
 
-    private def history = props.history.asInstanceOf[HistoryT]
-    private def gameState = history.state
+    private def gameState = props.state.asInstanceOf[StateT]
 
     def render() = div(className := "sidebar-player") (
       span(className := "medium-text white-text") (

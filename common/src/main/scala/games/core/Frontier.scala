@@ -9,7 +9,8 @@ object Frontier {
 
   object Moves {
 
-    def update[V <: Vec, S <: State.VState[V]](state: S, pos: V): S = {
+    def update[V <: Vec, P <: Piece]
+        (state: State[V, P], pos: V): State[V, P] = {
 
       val positions = pos +: canMoveTo(state, pos)
 
@@ -17,7 +18,7 @@ object Frontier {
         state.pieces.get(pos) match {
 
           case Some(p: Piece.Moveable[_, _]) => {
-            val piece = p.asInstanceOf[Piece.Moveable[V, S]]
+            val piece = p.asInstanceOf[Piece.Moveable[V, P]]
             state
               .purgeLabel(Frontier.Move(pos))
               .addLabel (
@@ -25,7 +26,7 @@ object Frontier {
                   .map { case a -> _ => a.to },
                 Frontier.Move(pos)
               )
-              .asInstanceOf[S]
+              .asInstanceOf[State[V, P]]
           }
 
           case _ => state
@@ -33,13 +34,13 @@ object Frontier {
       }
     }
 
-    def updateAll[V <: Vec, S <: State[V, _ <: Piece, _]]
-        (state: S, pos: Seq[V]): S = {
+    def updateAll[V <: Vec, P <: Piece]
+        (state: State[V, P], pos: Seq[V]): State[V, P] = {
       pos.foldLeft(state)((s, p) => update(s, p))
     }
 
-    def canMoveTo[V <: Vec, S <: State[V, _, _]]
-        (state: S, pos: V): Seq[V] = {
+    def canMoveTo[V <: Vec, P <: Piece]
+        (state: State[V, P], pos: V): Seq[V] = {
 
       state.labels.get(pos).toSeq flatMap {
         case Frontier.Move(from) => Some(from.asInstanceOf[V])
@@ -47,8 +48,8 @@ object Frontier {
       }
     }
 
-    def canMoveTo[V <: Vec, S <: State[V, _ <: Piece, _]]
-        (state: S, pos: V, playerId: Int): Seq[V] = {
+    def canMoveTo[V <: Vec, P <: Piece]
+        (state: State[V, P], pos: V, playerId: Int): Seq[V] = {
 
       canMoveTo(state, pos)
         .filter(p => state.pieces(p).ownerId == playerId)

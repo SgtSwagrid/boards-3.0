@@ -2,7 +2,7 @@ package games
 
 import games.core.{
   Action, Background, Colour, Frontier, Game,
-  History, Layout, Manifold, Piece, State, Vec2
+  Layout, Manifold, Piece, Pieces, State, Vec2
 }
 
 class Chess(val id: Int) extends Game {
@@ -13,14 +13,14 @@ class Chess(val id: Int) extends Game {
   val manifold = Manifold.Rectangle(8, 8)
   
   val background = Background.Checkerboard(
-    Colour.sourLemon, Colour.brightYarrow)
+    Colour.brightYarrow, Colour.sourLemon)
 
   def layout(playerId: Option[Int]) =
     if (playerId.contains(1)) Layout.RotatedGrid
     else Layout.Grid
 
   sealed abstract class ChessPiece(name: String)
-      extends Piece.Moveable[VecT, StateT] {
+      extends Piece.Moveable[VecT, ChessPiece] {
 
     val colour = byOwner("white", "black")
     val texture = s"chess/${colour}_$name.png"
@@ -33,7 +33,7 @@ class Chess(val id: Int) extends Game {
         move: Action.Move[Vec2]) = {
 
       val kingPos = after.occurences.get(King(before.turn)).head
-      !after.checked(kingPos)
+      !Pieces.check(after, kingPos)
     }
   }
 
@@ -89,8 +89,8 @@ class Chess(val id: Int) extends Game {
   def start(players: Int) = {
 
     def pieces(pid: Int) = Seq (
-      Rook(pid), Knight(pid), Bishop(pid), King(pid),
-      Queen(pid), Bishop(pid), Knight(pid), Rook(pid)
+      Rook(pid), Knight(pid), Bishop(pid), Queen(pid),
+      King(pid), Bishop(pid), Knight(pid), Rook(pid)
     )
 
     new StateT()
@@ -101,14 +101,14 @@ class Chess(val id: Int) extends Game {
       .addPieces(manifold.row(6), List.fill(8)(Pawn(1)))
   }
 
-  def next(history: HistoryT) = {
+  def next(state: StateT) = {
 
-    history.state.moves().toMap mapValues { state =>
-
-      if (state.mated(state.nextTurn())) {
+    Pieces.moves(state, state.turn).toMap mapValues { state =>
+      
+      if (Pieces.mate(state, state.nextTurn())) {
 
         val kingPos = state.occurences.get(King(state.nextTurn())).head
-        val outcome = if (state.checked(kingPos))
+        val outcome = if (Pieces.check(state, kingPos))
           State.Winner(state.turn) else State.Draw
         
         state.endGame(outcome)
@@ -119,5 +119,4 @@ class Chess(val id: Int) extends Game {
 
   type VecT = Vec2
   type PieceT = ChessPiece
-  type StateT = State[Vec2, ChessPiece, Null]
 }
