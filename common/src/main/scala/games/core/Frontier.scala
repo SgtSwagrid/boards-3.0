@@ -21,7 +21,7 @@ object Frontier {
             val piece = p.asInstanceOf[Piece.Moveable[V, P]]
             state
               .purgeLabel(Frontier.Move(pos))
-              .addLabel (
+              .addLabels (
                 piece.moves(state, pos)
                   .map { case a -> _ => a.to },
                 Frontier.Move(pos)

@@ -47,12 +47,32 @@ class Chess(val id: Int) extends Game {
       val forward = manifold
         .ray(pos, dir, if (pos.y == home) 2 else 1)
         .takeWhile(state.empty)
+      
+      val enPassant = state.action flatMap {
+
+        case Action.Move(from: Vec2, to: Vec2)
+            if state.isPiece(to, classOf[Pawn]) &&
+            (from - to).y.abs == 2 =>
+
+          Some((from + to) / 2)
+
+        case _ => None
+      }
 
       val captures = Vec2.horz
         .map(pos + dir + _)
-        .filter(state.enemy)
+        .filter(pos => state.enemy(pos) || enPassant.contains(pos))
 
       (forward ++ captures)
+    }
+
+    override def applyMove(state: StateT, move: Action.Move[Vec2]) = {
+
+      val moved = state.movePiece(move.from, move.to)
+
+      if (state.empty(move.to) && (move.to - move.from).x != 0)
+        moved.removePiece(move.to - dir)
+      else moved
     }
   }
 
