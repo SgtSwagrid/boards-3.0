@@ -15,7 +15,7 @@ case class State[V <: Vec, P <: Piece] (
 
   players: List[PlayerState[P]] = List[PlayerState[P]](),
 
-  stage: State.Stage = null,
+  stage: Int = 0,
   turn: Int = 0,
   outcome: State.Outcome = State.Ongoing,
 
@@ -107,8 +107,20 @@ case class State[V <: Vec, P <: Piece] (
     )
   }
 
+  def endStage(skip: Int = 1): State[V, P] = {
+    copy(stage = stage + skip)
+  }
+
   def endTurn(skip: Int = 1): State[V, P] = {
-    copy(turn = (turn + skip) % players.size)
+    copy(turn = (turn + skip) % players.size, stage = 0)
+  }
+
+  def endStageOrTurn(maxStages: Int = 0): State[V, P] = {
+    val nextStage = stage + 1
+    if (nextStage < maxStages)
+      copy(turn = turn, stage = nextStage)
+    else
+      copy(turn = (turn + 1) % players.size, stage = 0)
   }
 
   def endGame(outcome: State.Outcome): State[V, P] = {
@@ -127,6 +139,8 @@ case class State[V <: Vec, P <: Piece] (
   def enemy(pos: V) = pieces.get(pos).exists(_.ownerId != turn)
 
   def nextTurn(skip: Int = 1) = (turn + skip) % players.size
+
+  def nextState(skip: Int = 1, stages: Int = 0) = (stage + skip) % stages
 
   def history: Seq[State[V, P]] = {
     this +: previous.toSeq.flatMap(_.history)
