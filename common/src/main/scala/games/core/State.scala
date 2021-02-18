@@ -64,16 +64,27 @@ case class State[V <: Vec, P <: Piece] (
 
   def removePiece(pos: V): State[V, P] = {
 
-    val piece = pieces(pos)
+    pieces.get(pos) match {
+
+      case Some(piece) => copy (
+        pieces = pieces - pos,
+        piecesByOwner = piecesByOwner - (piece.ownerId -> pos),
+        occurences = occurences - (piece -> pos)
+      )
+
+      case None => this
+    }
+  }
+
+  def addLabel(pos: V, label: State.Label): State[V, P] = {
 
     copy (
-      pieces = pieces - pos,
-      piecesByOwner = piecesByOwner - (piece.ownerId -> pos),
-      occurences = occurences - (piece -> pos)
+      labels = labels + (pos -> label),
+      labelOccurences = labelOccurences + (label -> pos)
     )
   }
 
-  def addLabel(pos: Seq[V], label: State.Label): State[V, P] = {
+  def addLabels(pos: Seq[V], label: State.Label): State[V, P] = {
 
     copy (
       labels = labels concat pos.map(_ -> label),
@@ -123,6 +134,8 @@ case class State[V <: Vec, P <: Piece] (
       copy(turn = (turn + 1) % players.size, stage = 0)
   }
 
+  def nextTurn(skip: Int = 1) = (turn + skip) % players.size
+
   def endGame(outcome: State.Outcome): State[V, P] = {
     copy(outcome = outcome)
   }
@@ -138,7 +151,9 @@ case class State[V <: Vec, P <: Piece] (
   def friendly(pos: V) = pieces.get(pos).exists(_.ownerId == turn)
   def enemy(pos: V) = pieces.get(pos).exists(_.ownerId != turn)
 
-  def nextTurn(skip: Int = 1) = (turn + skip) % players.size
+  def isPiece(pos: V, pieceType: Class[_ <: P]): Boolean = {
+    pieces.get(pos).exists(pieceType.isInstance)
+  }
 
   def nextState(skip: Int = 1, stages: Int = 0) = (stage + skip) % stages
 
