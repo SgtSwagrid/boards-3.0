@@ -21,6 +21,5 @@ abstract class Game {
   def layout(playerId: Option[Int]): Layout[VecT]
 
   def start(players: Int): StateT
-  
   def actions(state: StateT): ActionSet[VecT, PieceT, ActionT]
 }

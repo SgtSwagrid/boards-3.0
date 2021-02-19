@@ -22,7 +22,7 @@ class Chess(val id: Int) extends Game {
     else Layout.Grid
 
   sealed abstract class ChessPiece(name: String)
-      extends Piece.Moveable[VecT, ChessPiece] {
+      extends Piece.Moveable[Vec2, ChessPiece] {
 
     val colour = byOwner("white", "black")
     val texture = s"chess/${colour}_$name.png"

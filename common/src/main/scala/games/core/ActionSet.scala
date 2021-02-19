@@ -38,7 +38,7 @@ case class ActionSet[V <: Vec, P <: Piece, +A <: Action[V]] (
   def isEmpty: Boolean = actionSet.view.isEmpty
 
   def actions: Iterable[A] = {
-    actionSet.map { case a -> _ => a }.toSet
+    actionSet.map { case a -> _ => a }
   }
 
   def places: Iterable[Action.Place[V]] = {
@@ -56,7 +56,7 @@ case class ActionSet[V <: Vec, P <: Piece, +A <: Action[V]] (
   def successors: Iterable[S] = {
     actionSet.map { case a -> s =>
       s.copy(previous = Some(s), action = Some(a))
-    }.toSet
+    }
   }
 }
 
