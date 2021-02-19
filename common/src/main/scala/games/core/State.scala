@@ -20,14 +20,14 @@ case class State[V <: Vec, P <: Piece] (
   outcome: State.Outcome = State.Ongoing,
 
   previous: Option[State[V, P]] = None,
-  action: Option[Action] = None
+  action: Option[Action[V]] = None
 ) {
 
   def addPiece(pos: V, piece: P): State[V, P] = {
 
     val previous = pieces.get(pos)
 
-    copy (
+    val newState = copy (
 
       pieces = pieces + (pos -> piece),
 
@@ -43,6 +43,8 @@ case class State[V <: Vec, P <: Piece] (
         case None => occurences + (piece -> pos)
       }
     )
+    
+    newState.addLabel(pos, State.Modified)
   }
 
   def addPieces(pieces: Iterable[(V, P)]): State[V, P] = {
@@ -64,7 +66,7 @@ case class State[V <: Vec, P <: Piece] (
 
   def removePiece(pos: V): State[V, P] = {
 
-    pieces.get(pos) match {
+    val newState = pieces.get(pos) match {
 
       case Some(piece) => copy (
         pieces = pieces - pos,
@@ -74,6 +76,8 @@ case class State[V <: Vec, P <: Piece] (
 
       case None => this
     }
+    
+    newState.addLabel(pos, State.Modified)
   }
 
   def addLabel(pos: V, label: State.Label): State[V, P] = {
@@ -139,9 +143,17 @@ case class State[V <: Vec, P <: Piece] (
   def friendly(pos: V) = pieces.get(pos).exists(_.ownerId == turn)
   def enemy(pos: V) = pieces.get(pos).exists(_.ownerId != turn)
 
+  def allEmpty(pos: Iterable[V]) = !pos.exists(pieces.isDefinedAt)
+
   def isPiece(pos: V, pieceType: Class[_ <: P]): Boolean = {
     pieces.get(pos).exists(pieceType.isInstance)
   }
+
+  def modified(pos: V): Boolean = {
+    labels.get(pos).contains(State.Modified)
+  }
+
+  def start: State[V, P] = purgeLabel(State.Modified)
 
   def history: Seq[State[V, P]] = {
     this +: previous.toSeq.flatMap(_.history)
@@ -163,6 +175,7 @@ object State {
   case object Draw extends Outcome
 
   trait Label
+  case object Modified extends Label
 
   trait Stage
 }

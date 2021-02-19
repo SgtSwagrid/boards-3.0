@@ -1,9 +1,11 @@
 package games
 
 import games.core.{
-  Action, Background, Colour, Frontier, Game,
-  Layout, Manifold, Piece, Pieces, State, Vec2
+  Action, ActionSet, Background, Colour, Frontier,
+  Game, Layout, Manifold, Piece, State, Vec2
 }
+
+import games.core.ActionSet.{PlaceSet, MoveSet}
 
 class TicTacToe(val id: Int) extends Game {
 
@@ -22,17 +24,13 @@ class TicTacToe(val id: Int) extends Game {
     val texture = s"tictactoe/${player}.png"
   }
 
-  def start(players: Int) = new StateT().withPlayers(2)
+  def start(players: Int) = new StateT().withPlayers(2).start
 
-  def next(state: StateT) = {
+  def actions(state: StateT) = {
 
-    val piece = TicTacToePiece(state.turn)
-
-    manifold.positions
-      .filter(state.empty)
-      .map(to => Action.Place(to, piece) -> state.addPiece(to, piece))
-      .toMap
-      .mapValues(_.endTurn())
+    ActionSet.places(state, TicTacToePiece(state.turn)) {
+      manifold.positions.filter(state.empty)
+    }.mapStates(_.endTurn())
   }
 
   type VecT = Vec2

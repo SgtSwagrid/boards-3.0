@@ -14,6 +14,7 @@ abstract class Game {
   type VecT <: Vec
   type PieceT <: Piece
   type StateT = State[VecT, PieceT]
+  type ActionT = Action[VecT]
   
   val manifold: Manifold[VecT]
   val background: Background[VecT]
@@ -21,20 +22,5 @@ abstract class Game {
 
   def start(players: Int): StateT
   
-  def next(state: StateT): Iterable[(Action, StateT)]
-
-  def successors(state: StateT): Iterable[StateT] = {
-    next(state).toSeq map { case (a, s) =>
-      s.copy(previous = Some(state), action = Some(a))
-    }
-  }
-
-  def actions(history: StateT): Iterable[Action] =
-    successors(history).flatMap(_.action)
-
-  def takeAction(history: StateT, action: Action): Option[StateT] =
-    successors(history).find(_.action == Some(action))
-
-  def validateAction(history: StateT, action: Action): Boolean =
-    takeAction(history, action).isDefined
+  def actions(state: StateT): ActionSet[VecT, PieceT, ActionT]
 }
