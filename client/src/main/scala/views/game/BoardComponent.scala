@@ -231,10 +231,10 @@ import games.core.Piece
 
     val base = background.colour(loc)
 
-    val changes = gameState.action.toSeq flatMap {
-      case Action.Place(pos, _) => Some(pos)
+    val changes = gameState.actionsThisTurn flatMap {
+      case Action.Place(pos, _) => Seq(pos)
       case Action.Move(from, to) => Seq(from, to)
-      case Action.Destroy(pos) => Some(pos)
+      case Action.Destroy(pos) => Seq(pos)
       case _ => None
     }
 

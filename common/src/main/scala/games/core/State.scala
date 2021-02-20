@@ -171,6 +171,12 @@ case class State[V <: Vec, P <: Piece] (
   def history: Seq[State[V, P]] = {
     this +: previous.toSeq.flatMap(_.history)
   }
+
+  def actionsThisTurn: Seq[Action[V]] = {
+    action.toSeq ++
+      previous.filter(p => p.previous.exists(_.turn == p.turn))
+        .toSeq.flatMap(_.actionsThisTurn)
+  }
 }
 
 case class PlayerState[P <: Piece] (
