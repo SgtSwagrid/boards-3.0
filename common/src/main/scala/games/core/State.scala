@@ -171,8 +171,6 @@ case class State[V <: Vec, P <: Piece] (
   def history: Seq[State[V, P]] = {
     this +: previous.toSeq.flatMap(_.history)
   }
-
-  override def toString = action + ", " + stage + ", " + previous
 }
 
 case class PlayerState[P <: Piece] (

@@ -34,8 +34,6 @@ class Amazons(val id: Int) extends Game {
 
   def actions(state: StateT) = {
 
-    println(state)
-
     if (state.stage == 0) {
 
       val queens = state.occurences.get(Queen(state.turn))
@@ -47,7 +45,6 @@ class Amazons(val id: Int) extends Game {
     } else {
 
       val action = state.action.get.asInstanceOf[Action.Move[Vec2]]
-      val queen = state.pieces(action.to)
 
       ActionSet.places(state, Arrow(state.turn)) {
         Vec2.cardinal.flatMap(manifold.rayUntil(action.to, _, state.occupied))
