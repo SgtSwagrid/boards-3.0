@@ -8,6 +8,7 @@ import games.core.{
 class TicTacToe(val id: Int) extends Game {
 
   val name = "Tic Tac Toe"
+  val streak = 3
   val players = Seq(2)
 
   val manifold = Manifold.Rectangle(3, 3)
@@ -30,9 +31,29 @@ class TicTacToe(val id: Int) extends Game {
 
     manifold.positions
       .filter(state.empty)
-      .map(to => Action.Place(to, piece) -> state.addPiece(to, piece))
+      .map(pos => Action.Place(pos, piece) -> state.addPiece(pos, piece))
       .toMap
-      .mapValues(_.endTurn())
+      .map{ case ((action@Action.Place(pos, _)) -> state) => (action ->
+        (if (streakFormed(state, pos, streak)) {
+          state.endGame(State.Winner(state.turn))
+        } else if (state.pieces.size == manifold.size) {
+          state.endGame(State.Draw)
+        } else {
+          state.endTurn()
+        }))
+      }
+  }
+
+  /** Returns the Outcone of the state there is one */
+  def streakFormed(state: StateT, pos: Vec2, streak: Int = 3): Boolean = {
+
+    val directions: Seq[Vec2] = Vec2.halfCardinal
+
+    val streaks: Seq[Seq[Vec2]] = directions
+      .flatMap(manifold.linesThrough(pos, _, streak))
+      .filter(_.size == streak)
+
+    streaks.exists(_.forall(state.friendly))
   }
 
   type VecT = Vec2

@@ -48,4 +48,8 @@ object Vec2 {
   val orthogonal = Seq(N, E, S, W)
   val diagonal = Seq(NE, SE, SW, NW)
   val cardinal = orthogonal ++ diagonal
+  
+  val halfOrthogonal = Seq(N, E)
+  val halfDiagonal = Seq(NE, NW)
+  val halfCardinal = halfOrthogonal ++ halfDiagonal
 }
