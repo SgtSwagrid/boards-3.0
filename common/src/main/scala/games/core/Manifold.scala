@@ -20,7 +20,7 @@ object Manifold {
     }
 
     def ray(start: Vec2, dir: Vec2): Iterable[Vec2] = {
-      Iterator.iterate(start + dir)(_ + dir).takeWhile(inBounds).toSeq.view
+      LazyList.iterate(start + dir)(_ + dir).takeWhile(inBounds)
     }
 
     def ray(start: Vec2, dir: Vec2, size: Int): Iterable[Vec2] = {

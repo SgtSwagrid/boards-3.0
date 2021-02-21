@@ -112,7 +112,7 @@ class Chess(val id: Int) extends Game {
     actions.map { (action, state) =>
 
       val mate = moves(state, state.nextTurn())
-        .filterStates(!inCheck(_, state.turn))
+        .filterStates(!inCheck(_, state.nextTurn()))
         .isEmpty
 
       if (mate) {

@@ -28,7 +28,7 @@ case class ActionSet[V <: Vec, P <: Piece, +A <: Action[V]] (
   }
 
   def map(f: (A, S) => S): ActionSet[V, P, A] = {
-    copy(actionSet.map { case a -> s => a -> f(a, s) })
+    copy(actionSet.view.map { case a -> s => a -> f(a, s) })
   }
 
   def orElse[A2 >: A <: Action[V]](other: ActionSet[V, P, A2]):
@@ -36,7 +36,7 @@ case class ActionSet[V <: Vec, P <: Piece, +A <: Action[V]] (
     copy((actionSet ++ other.actionSet).toMap)
   }
 
-  def isEmpty: Boolean = actionSet.view.isEmpty
+  def isEmpty: Boolean = !actionSet.headOption.isDefined
 
   def actions: Iterable[A] = {
     actionSet.map { case a -> _ => a }
@@ -63,6 +63,10 @@ case class ActionSet[V <: Vec, P <: Piece, +A <: Action[V]] (
 
 object ActionSet {
 
+  def empty[V <: Vec, P <: Piece](state: State[V, P]) = {
+    ActionSet(Nil, state)
+  }
+
   def combine[V <: Vec, P <: Piece, A <: Action[V]]
       (sets: Iterable[ActionSet[V, P, A]]) = {
     
@@ -88,7 +92,7 @@ object ActionSet {
   def allMoves[V <: Vec, P <: Piece](state: State[V, P], player: Int):
       ActionSet[V, P, Action.Move[V]] = {
     
-    val pieces = state.piecesByOwner.get(player).view
+    val pieces = state.piecesByOwner.get(player)
     val moveable = filterMoveable(state, pieces)
     
     combine(moveable.map { case pos -> piece =>

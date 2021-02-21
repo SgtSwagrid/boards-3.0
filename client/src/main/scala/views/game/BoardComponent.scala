@@ -13,9 +13,8 @@ import io.circe._, io.circe.generic.auto._, io.circe.parser._, io.circe.syntax._
 
 import models.Board
 import models.protocols.BoardProtocol._
-import games.core.{Action, Colour, Game, State, Vec, Vec2}
+import games.core.{Action, ActionSet, Colour, Game, Piece, State, Vec, Vec2}
 import games.core.State.{AnyState, Ongoing}
-import games.core.Piece
 
 @react class BoardComponent extends Component {
   
@@ -182,13 +181,24 @@ import games.core.Piece
     
     if (props != prevProps) {
 
-      val actions = new ActionCache(game.actions(gameState))
+      if (canPlay) {
 
-      setState(_.copy (
-        actions = actions,
-        selected = autoSelect(actions.actionSeq),
-        drag = false
-      ))
+        val actions = new ActionCache(game.actions(gameState))
+
+        setState(_.copy (
+          actions = actions,
+          selected = autoSelect(actions.actionSeq),
+          drag = false
+        ))
+
+      } else {
+
+        setState(_.copy (
+          actions = new ActionCache(ActionSet.empty(gameState)),
+          selected = None,
+          drag = false
+        ))
+      }
     }
 
     val scene = new SceneT(game, gameState, layout, state.canvasSize)
