@@ -14,13 +14,13 @@ case class Vec2(x: Int, y: Int) extends Vec {
   def directionTo(v: Vec2) = {
     def gcd(a: Int, b: Int): Int =
       if (b == 0) a else gcd(b, a % b)
-    if (v == this) Vec2.Zero else
+    if (v == this) Vec2.zero else
     (v - this) / gcd((v.x - x).abs, (v.y - y).abs)
   }
 
   def stepsTo(v: Vec2) = {
     val dir = this directionTo v
-    if (dir == Vec2.Zero) 0
+    if (dir == Vec2.zero) 0
     else if (dir.y == 0) (v - this).x / dir.x
     else (v - this).y / dir.y
   }
@@ -30,7 +30,8 @@ case class Vec2(x: Int, y: Int) extends Vec {
 
 object Vec2 {
 
-  val Zero = Vec2(0, 0)
+  val zero = Vec2(0, 0)
+  val unit = Vec2(1, 1)
   
   val N = Vec2(0, 1)
   val E = Vec2(1, 0)

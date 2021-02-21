@@ -34,7 +34,7 @@ class TicTacToe(val id: Int) extends Game {
     }.map { (action, state) => 
       if (streakFormed(state, action.pos, streak)) {
         state.endGame(State.Winner(state.turn))
-      } else if (state.pieces.size == manifold.size) {
+      } else if (state.pieces.size == manifold.area) {
         state.endGame(State.Draw)
       } else {
         state.endTurn()
@@ -47,11 +47,11 @@ class TicTacToe(val id: Int) extends Game {
 
     val directions: Seq[Vec2] = Vec2.halfCardinal
 
-    val streaks: Seq[Seq[Vec2]] = directions
+    val streaks: Iterable[Iterable[Vec2]] = directions
       .flatMap(manifold.linesThrough(pos, _, streak))
       .filter(_.size == streak)
 
-    streaks.exists(_.forall(state.friendly))
+    streaks.exists(_.forall(state.friendly(_)))
   }
 
   type VecT = Vec2

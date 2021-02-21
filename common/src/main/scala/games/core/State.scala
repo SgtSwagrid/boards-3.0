@@ -152,8 +152,12 @@ case class State[V <: Vec, P <: Piece] (
 
   def empty(pos: V) = !pieces.isDefinedAt(pos)
   def occupied(pos: V) = pieces.isDefinedAt(pos)
-  def friendly(pos: V) = pieces.get(pos).exists(_.ownerId == turn)
-  def enemy(pos: V) = pieces.get(pos).exists(_.ownerId != turn)
+
+  def friendly(pos: V, player: Int = turn) =
+    pieces.get(pos).exists(_.ownerId == player)
+
+  def enemy(pos: V, player: Int = turn) =
+    pieces.get(pos).exists(_.ownerId != player)
 
   def allEmpty(pos: Iterable[V]) = !pos.exists(pieces.isDefinedAt)
 
@@ -172,7 +176,11 @@ case class State[V <: Vec, P <: Piece] (
     this +: previous.toSeq.flatMap(_.history)
   }
 
-  override def toString = action + ", " + stage + ", " + previous
+  def actionsThisTurn: Seq[Action[V]] = {
+    action.toSeq ++
+      previous.filter(p => p.previous.exists(_.turn == p.turn))
+        .toSeq.flatMap(_.actionsThisTurn)
+  }
 }
 
 case class PlayerState[P <: Piece] (

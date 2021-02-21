@@ -13,9 +13,8 @@ import io.circe._, io.circe.generic.auto._, io.circe.parser._, io.circe.syntax._
 
 import models.Board
 import models.protocols.BoardProtocol._
-import games.core.{Action, Colour, Game, State, Vec, Vec2}
+import games.core.{Action, ActionSet, Colour, Game, Piece, State, Vec, Vec2}
 import games.core.State.{AnyState, Ongoing}
-import games.core.Piece
 
 @react class BoardComponent extends Component {
   
@@ -29,8 +28,8 @@ import games.core.Piece
   )
 
   case class State (
-    canvasSize: Vec2 = Vec2.Zero,
-    cursor: Vec2 = Vec2.Zero,
+    canvasSize: Vec2 = Vec2.zero,
+    cursor: Vec2 = Vec2.zero,
     selected: Option[Vec] = None,
     drag: Boolean = false,
     actions: ActionCache[_ <: Vec, _ <: Piece] = null
@@ -102,7 +101,7 @@ import games.core.Piece
         case (from, to) => tryMove(from, to)
       }
 
-      if (!moved && !placed) {
+      if (!placed && !moved) {
 
         val loc = scene.location(pos).filter { loc =>
           actions.movesFrom.get(loc).nonEmpty
@@ -110,7 +109,8 @@ import games.core.Piece
 
         setState(_.copy(selected = loc, drag = true))
       }
-      autoSelect()
+      autoSelect(actions.actionSeq)
+        .foreach(s => setState(_.copy(selected = Some(s))))
     }
   }
 
@@ -128,12 +128,7 @@ import games.core.Piece
   private def tryPlace(pos: VecT) = {
 
     val place = actions.placesAt.get(pos).headOption
-
-    place foreach { place =>
-      takeAction(place)
-      setState(_.copy(selected = None))
-    }
-
+    place.foreach(takeAction)
     place.isDefined
   }
 
@@ -168,24 +163,42 @@ import games.core.Piece
     Vec2(x, y)
   }
 
-  private def autoSelect() = {
+  private def autoSelect(actions: Seq[Action[VecT]]) = {
 
-    actions.actionSeq match {
-      case Action.Move(from, _) :: actions =>
-        if (actions.forall {
-          case Action.Move(`from`, _) => true
-          case _ => false
-        }) setState(_.copy(selected = Some(from)))
-      case _ => ()
-    }
+    if (canPlay)
+      actions match {
+        case Action.Move(from, _) :: actions
+          if actions.forall {
+            case Action.Move(`from`, _) => true
+            case _ => false
+          } => Some(from)
+        case _ => None
+      }
+    else None
   }
 
   override def componentDidUpdate(prevProps: Props, prevState: State) = {
     
     if (props != prevProps) {
-      setState(_.copy(actions = new ActionCache(game.actions(gameState))))
-      if (canPlay) autoSelect()
-      else setState(_.copy(selected = None, drag = false))
+
+      if (canPlay) {
+
+        val actions = new ActionCache(game.actions(gameState))
+
+        setState(_.copy (
+          actions = actions,
+          selected = autoSelect(actions.actionSeq),
+          drag = false
+        ))
+
+      } else {
+
+        setState(_.copy (
+          actions = new ActionCache(ActionSet.empty(gameState)),
+          selected = None,
+          drag = false
+        ))
+      }
     }
 
     val scene = new SceneT(game, gameState, layout, state.canvasSize)
@@ -231,10 +244,10 @@ import games.core.Piece
 
     val base = background.colour(loc)
 
-    val changes = gameState.action.toSeq flatMap {
-      case Action.Place(pos, _) => Some(pos)
+    val changes = gameState.actionsThisTurn flatMap {
+      case Action.Place(pos, _) => Seq(pos)
       case Action.Move(from, to) => Seq(from, to)
-      case Action.Destroy(pos) => Some(pos)
+      case Action.Destroy(pos) => Seq(pos)
       case _ => None
     }
 

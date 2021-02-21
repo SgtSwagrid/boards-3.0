@@ -10,6 +10,7 @@ import io.circe._, io.circe.generic.auto._, io.circe.parser._, io.circe.syntax._
 import models.{BoardModel, UserModel, Board, Player, User}
 import actors.{BoardActor, BoardManager}
 import controllers.helpers.{UserHelper, ResourceHelper}
+import games.Chess
 
 @Singleton
 class BoardController @Inject()
