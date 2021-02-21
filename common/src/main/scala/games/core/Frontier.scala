@@ -22,11 +22,9 @@ object Frontier {
             state
               .purgeLabel(Frontier.Move(pos))
               .addLabels (
-                piece.moves(state, pos)
-                  .map { case a -> _ => a.to },
+                piece.moves(state, pos).moves.map(_.to).toSeq,
                 Frontier.Move(pos)
               )
-              .asInstanceOf[State[V, P]]
           }
 
           case _ => state

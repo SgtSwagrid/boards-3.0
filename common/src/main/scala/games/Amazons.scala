@@ -1,15 +1,14 @@
 package games
 
 import games.core.{
-  Action, Background, Colour, Frontier, Game,
-  Layout, Manifold, Piece, Pieces, State, Vec2
+  Action, ActionSet, Background, Colour, Frontier,
+  Game, Layout, Manifold, Piece, State, Vec2
 }
 
 class Amazons(val id: Int) extends Game {
 
   val name = "Game of the Amazons"
   val players = Seq(2)
-  val stages = 2
 
   val manifold = Manifold.Rectangle(10, 10)
 
@@ -18,30 +17,13 @@ class Amazons(val id: Int) extends Game {
 
   def layout(playerId: Option[Int]) = Layout.Grid
 
-  sealed abstract class AmazonsPiece extends Piece
-
-  case class Queen(ownerId: Int) extends AmazonsPiece {
+  sealed abstract class AmazonsPiece(name: String) extends Piece {
     val colour = byOwner("white", "black")
-    val texture: String = s"chess/${colour}_queen.png"
-    
-    def generateMoves(state: StateT, pos: Vec2) = {
-      Vec2.cardinal.flatMap(manifold.rayUntil(pos, _, state.occupied))
-    }
+    val texture: String = s"chess/${colour}_$name.png"
   }
 
-  case class Arrow(ownerId: Int) extends AmazonsPiece {
-    val colour = byOwner("white", "black")
-    val texture: String = s"chess/${colour}_pawn.png"
-
-    def generatePlaces(state: StateT) = {
-      val lastQueenPos = state.action match {
-          case Some(Action.Move(_, to: Vec2)) => to
-          case _ => null
-      }
-        
-      Vec2.cardinal.flatMap(manifold.rayUntil(lastQueenPos, _, state.occupied))
-    }
-  }
+  case class Queen(ownerId: Int) extends AmazonsPiece("queen")
+  case class Arrow(ownerId: Int) extends AmazonsPiece("pawn")
 
   def start(players: Int) = {
     new StateT()
@@ -50,48 +32,28 @@ class Amazons(val id: Int) extends Game {
     .addPieces(Seq(Vec2(0, 6), Vec2(3, 9), Vec2(6, 9), Vec2(9, 6)), List.fill(4)(Queen(1)))
   }
 
-  def next(state: StateT) = { 
-    
-    val moves = 
-      if (state.stage == 0) {
-        // Queens
-        val queenLocs = state.occurences.get(Queen(state.turn))
+  def actions(state: StateT) = {
 
-        queenLocs.flatMap { from => {
-            val tos = Queen(state.turn).generateMoves(state, from)
+    println(state)
 
-            val actions = tos.map{ to => 
-              Action.Move(from, to)
-            }
-            
-            actions.map { action =>  
-              action -> state.movePiece(action.from, action.to)
-            }.toMap
-          }
-        }
-      } else {
-        // Arrow after queen
-        Arrow(state.turn).generatePlaces(state).map{ pos =>
-          Action.Place(pos, Arrow(state.turn))
-        }.map { action =>
-          (action -> state.addPiece(action.pos, action.piece.asInstanceOf[PieceT]))
-        }.toMap
-      }
+    if (state.stage == 0) {
 
-      moves.toMap.mapValues(state => {
-        if (state.stage == 1) {
-          val frontier = state.occurences.get(Queen(state.nextTurn())).flatMap(manifold.box(_, 1))
+      val queens = state.occurences.get(Queen(state.turn))
 
-          if (frontier.exists(state.empty)) {
-            state.endStageOrTurn(stages)
-          } else {
-            state.endGame(State.Winner(state.turn))
-          }
-        } else {
-          state.endStageOrTurn(stages)
-        }
-      })
-   }
+      ActionSet.combine(queens.map(pos => ActionSet.moves(state, pos) {
+        Vec2.cardinal.flatMap(manifold.rayUntil(pos, _, state.occupied))
+      })).mapStates(_.endStage())
+
+    } else {
+
+      val action = state.action.get.asInstanceOf[Action.Move[Vec2]]
+      val queen = state.pieces(action.to)
+
+      ActionSet.places(state, Arrow(state.turn)) {
+        Vec2.cardinal.flatMap(manifold.rayUntil(action.to, _, state.occupied))
+      }.mapStates(_.endTurn())
+    }
+  }
 
   type VecT = Vec2
   type PieceT = AmazonsPiece

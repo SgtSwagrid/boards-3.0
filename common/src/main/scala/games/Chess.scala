@@ -1,9 +1,11 @@
 package games
 
 import games.core.{
-  Action, Background, Colour, Frontier, Game,
-  Layout, Manifold, Piece, Pieces, State, Vec2
+  Action, ActionSet, Background, Colour, Frontier,
+  Game, Layout, Manifold, Piece, State, Vec2
 }
+
+import games.core.ActionSet.{PlaceSet, MoveSet}
 
 class Chess(val id: Int) extends Game {
   
@@ -20,21 +22,10 @@ class Chess(val id: Int) extends Game {
     else Layout.Grid
 
   sealed abstract class ChessPiece(name: String)
-      extends Piece.Moveable[VecT, ChessPiece] {
+      extends Piece.Moveable[Vec2, ChessPiece] {
 
     val colour = byOwner("white", "black")
     val texture = s"chess/${colour}_$name.png"
-
-    override def allowMove(state: StateT, move: Action.Move[Vec2]) = {
-      manifold.inBounds(move.to) && !state.friendly(move.to)
-    }
-
-    override def validateMove(before: StateT, after: StateT,
-        move: Action.Move[Vec2]) = {
-
-      val kingPos = after.occurences.get(King(before.turn)).head
-      !Pieces.check(after, kingPos)
-    }
   }
 
   case class Pawn(ownerId: Int) extends ChessPiece("pawn") {
@@ -42,66 +33,46 @@ class Chess(val id: Int) extends Game {
     private val home = byOwner(1, 6)
     private val dir = byOwner(Vec2.N, Vec2.S)
 
-    def generateMoves(state: StateT, pos: Vec2) = {
+    def moves(state: StateT, pos: Vec2) = ActionSet.moves(state, pos) {
 
       val forward = manifold
         .ray(pos, dir, if (pos.y == home) 2 else 1)
         .takeWhile(state.empty)
-      
-      val enPassant = state.action flatMap {
-
-        case Action.Move(from: Vec2, to: Vec2)
-            if state.isPiece(to, classOf[Pawn]) &&
-            (from - to).y.abs == 2 =>
-
-          Some((from + to) / 2)
-
-        case _ => None
-      }
 
       val captures = Vec2.horz
         .map(pos + dir + _)
-        .filter(pos => state.enemy(pos) || enPassant.contains(pos))
+        .filter(state.enemy)
 
       (forward ++ captures)
-    }
-
-    override def applyMove(state: StateT, move: Action.Move[Vec2]) = {
-
-      val moved = state.movePiece(move.from, move.to)
-
-      if (state.empty(move.to) && (move.to - move.from).x != 0)
-        moved.removePiece(move.to - dir)
-      else moved
     }
   }
 
   case class Rook(ownerId: Int) extends ChessPiece("rook") {
-    def generateMoves(state: StateT, pos: Vec2) = {
+    def moves(state: StateT, pos: Vec2) = ActionSet.moves(state, pos) {
       Vec2.orthogonal.flatMap(manifold.rayTo(pos, _, state.occupied))
     }
   }
 
   case class Knight(ownerId: Int) extends ChessPiece("knight") {
-    def generateMoves(state: StateT, pos: Vec2) = {
+    def moves(state: StateT, pos: Vec2) = ActionSet.moves(state, pos) {
       manifold.box(pos, 2).filter(manifold.taxiDist(pos, _) == 3)
     }
   }
 
   case class Bishop(ownerId: Int) extends ChessPiece("bishop") {
-    def generateMoves(state: StateT, pos: Vec2) = {
+    def moves(state: StateT, pos: Vec2) = ActionSet.moves(state, pos) {
       Vec2.diagonal.flatMap(manifold.rayTo(pos, _, state.occupied))
     }
   }
 
   case class Queen(ownerId: Int) extends ChessPiece("queen") {
-    def generateMoves(state: StateT, pos: Vec2) = {
+    def moves(state: StateT, pos: Vec2) = ActionSet.moves(state, pos) {
       Vec2.cardinal.flatMap(manifold.rayTo(pos, _, state.occupied))
     }
   }
 
   case class King(ownerId: Int) extends ChessPiece("king") {
-    def generateMoves(state: StateT, pos: Vec2) = {
+    def moves(state: StateT, pos: Vec2) = ActionSet.moves(state, pos) {
       manifold.box(pos, 1)
     }
   }
@@ -119,18 +90,32 @@ class Chess(val id: Int) extends Game {
       .addPieces(manifold.row(7), pieces(1))
       .addPieces(manifold.row(1), List.fill(8)(Pawn(0)))
       .addPieces(manifold.row(6), List.fill(8)(Pawn(1)))
+      .start
   }
 
-  def next(state: StateT) = {
+  def actions(state: StateT) = {
 
-    Pieces.moves(state, state.turn).toMap mapValues { state =>
-      
-      if (Pieces.mate(state, state.nextTurn())) {
+    def moves(state: StateT, player: Int) = {
+      ActionSet.allMoves(state, player)
+        .filterTo(manifold.inBounds)
+        .filterTo(!state.friendly(_))
+    }
 
-        val kingPos = state.occurences.get(King(state.nextTurn())).head
-        val outcome = if (Pieces.check(state, kingPos))
+    def inCheck(state: StateT, player: Int) = {
+      val kingPos = state.occurences.get(King(player)).head
+      !moves(state, (player+1)%2).attacking(kingPos).isEmpty
+    }
+
+    val actions = moves(state, state.turn)
+      .filterStates(!inCheck(_, state.turn))
+
+    actions.map { (action, state) =>
+
+      if (moves(state, state.nextTurn()).isEmpty) {
+
+        val outcome = if (inCheck(state, state.nextTurn()))
           State.Winner(state.turn) else State.Draw
-        
+
         state.endGame(outcome)
 
       } else state.endTurn()

@@ -32,7 +32,8 @@ import games.core.Piece
     canvasSize: Vec2 = Vec2.Zero,
     cursor: Vec2 = Vec2.Zero,
     selected: Option[Vec] = None,
-    drag: Boolean = false
+    drag: Boolean = false,
+    actions: ActionCache[_ <: Vec, _ <: Piece] = null
   )
 
   def initialState = State()
@@ -54,6 +55,9 @@ import games.core.Piece
   private lazy val background = game.background
   
   private def gameState = props.gameState.asInstanceOf[StateT]
+
+  private def actions = state.actions
+    .asInstanceOf[ActionCache[VecT, game.PieceT]]
 
   private type VecT = game.VecT
   private type StateT = game.StateT
@@ -82,6 +86,8 @@ import games.core.Piece
     canvas.onmousemove = e => setState(_.copy(cursor = cursorPos(e)))
     canvas.onmousedown = e => mouseDown(cursorPos(e))
     canvas.onmouseup = e => mouseUp(cursorPos(e))
+
+    setState(_.copy(actions = new ActionCache(game.actions(gameState))))
   }
 
   private def mouseDown(pos: Vec2) = {
@@ -99,7 +105,7 @@ import games.core.Piece
       if (!moved && !placed) {
 
         val loc = scene.location(pos).filter { loc =>
-          moves(gameState, loc).nonEmpty
+          actions.movesFrom.get(loc).nonEmpty
         }
 
         setState(_.copy(selected = loc, drag = true))
@@ -121,10 +127,7 @@ import games.core.Piece
 
   private def tryPlace(pos: VecT) = {
 
-    val place = game.actions(gameState).filter {
-      case Action.Place(to, _) => pos == to
-      case _ => false
-    }.headOption
+    val place = actions.placesAt.get(pos).headOption
 
     place foreach { place =>
       takeAction(place)
@@ -137,7 +140,7 @@ import games.core.Piece
   private def tryMove(from: VecT, to: VecT) = {
 
     val move = Action.Move(from, to)
-    val valid = game.validateAction(gameState, move)
+    val valid = actions.actions.contains(move)
       
     if (valid) {
       takeAction(move)
@@ -147,11 +150,14 @@ import games.core.Piece
     valid
   }
 
-  private def takeAction(action: Action) {
+  private def takeAction(action: Action[VecT]) {
 
-    val actionId = game.actions(gameState).toSeq.indexOf(action)
-    val request: BoardRequest = TakeAction(props.board.id, actionId)
-    if (actionId != -1) props.session.socket.send(request.asJson.toString)
+    val actionId = actions.indexOf(action)
+    
+    if (actionId != -1) {
+      val request: BoardRequest = TakeAction(props.board.id, actionId)
+      props.session.socket.send(request.asJson.toString)
+    }
   }
 
   private def cursorPos(event: MouseEvent) = {
@@ -164,7 +170,7 @@ import games.core.Piece
 
   private def autoSelect() = {
 
-    game.actions(gameState).toSeq match {
+    actions.actionSeq match {
       case Action.Move(from, _) :: actions =>
         if (actions.forall {
           case Action.Move(`from`, _) => true
@@ -177,6 +183,7 @@ import games.core.Piece
   override def componentDidUpdate(prevProps: Props, prevState: State) = {
     
     if (props != prevProps) {
+      setState(_.copy(actions = new ActionCache(game.actions(gameState))))
       if (canPlay) autoSelect()
       else setState(_.copy(selected = None, drag = false))
     }
@@ -245,8 +252,8 @@ import games.core.Piece
   private def drawHints(scene: SceneT) = {
 
     val locations = selected match {
-      case Some(selected) => moves(gameState, selected).map(_.to)
-      case None => places(gameState).map(_.pos)
+      case Some(selected) => actions.movesFrom.get(selected).map(_.to)
+      case None => actions.places.map(_.pos)
     }
 
     locations foreach { loc =>
@@ -285,20 +292,5 @@ import games.core.Piece
     val Vec2(mx, my) = state.cursor
     context.globalAlpha = 0.8
     context.drawImage(image, mx - width/2, my - height/2, width, height)
-  }
-
-  private def moves(state: StateT, pos: VecT) = {
-   
-    game.actions(state).filter {
-      case Action.Move(from, _) => from == pos
-      case _ => false
-    }.map(_.asInstanceOf[Action.Move[game.VecT]])
-  }
-
-  private def places(state: StateT) = {
-    
-    game.actions(state)
-      .filter(_.isInstanceOf[Action.Place[_]])
-      .map(_.asInstanceOf[Action.Place[game.VecT]])
   }
 }
