@@ -29,8 +29,8 @@ import games.core.Piece
   )
 
   case class State (
-    canvasSize: Vec2 = Vec2.Zero,
-    cursor: Vec2 = Vec2.Zero,
+    canvasSize: Vec2 = Vec2.zero,
+    cursor: Vec2 = Vec2.zero,
     selected: Option[Vec] = None,
     drag: Boolean = false,
     actions: ActionCache[_ <: Vec, _ <: Piece] = null
@@ -258,8 +258,6 @@ import games.core.Piece
       case Some(selected) => actions.movesFrom.get(selected).map(_.to)
       case None => actions.places.map(_.pos)
     }
-
-    println(selected, locations)
 
     locations foreach { loc =>
       

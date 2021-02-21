@@ -13,52 +13,77 @@ object Manifold {
 
   trait Rectangular extends Manifold[Vec2] {
 
-    def line(start: Vec2, end: Vec2) = {
+    def line(start: Vec2, end: Vec2): Iterable[Vec2] = {
       val dir = start directionTo end
       val size = (start stepsTo end) + 1
       ray(start, dir, size)
     }
 
-    def ray(start: Vec2, dir: Vec2): Seq[Vec2] = {
-      Iterator.iterate(start + dir)(_ + dir).takeWhile(inBounds).toSeq
+    def ray(start: Vec2, dir: Vec2): Iterable[Vec2] = {
+      Iterator.iterate(start + dir)(_ + dir).takeWhile(inBounds).toSeq.view
     }
 
-    def ray(start: Vec2, dir: Vec2, size: Int): Seq[Vec2] = {
+    def ray(start: Vec2, dir: Vec2, size: Int): Iterable[Vec2] = {
       ray(start, dir).take(size)
     }
 
-    def rayUntil(start: Vec2, dir: Vec2, end: Vec2 => Boolean): Seq[Vec2] = {
+    def rayUntil(start: Vec2, dir: Vec2, end: Vec2 => Boolean): Iterable[Vec2] = {
       ray(start, dir).takeWhile(!end(_))
     }
 
-    def rayTo(start: Vec2, dir: Vec2, end: Vec2 => Boolean): Seq[Vec2] = {
+    def rayTo(start: Vec2, dir: Vec2, end: Vec2 => Boolean): Iterable[Vec2] = {
       ray(start, dir).span(!end(_)) match {
         case (prefix, suffix) => prefix ++ suffix.headOption
       }
     }
 
-    def box(centre: Vec2, r: Int): Seq[Vec2] = {
+    def box(centre: Vec2, r: Int): Iterable[Vec2] = {
 
       val box = for {
         x <- -r to r
         y <- if (x.abs == r) -r to r else Seq(-r, r)
       } yield Vec2(x, y)
 
-      box.map(_ + centre).filter(inBounds)
+      box.view.map(_ + centre).filter(inBounds)
     }
 
-    def diamond(centre: Vec2, r: Int): Seq[Vec2] = {
+    def evenBox(centre: Vec2, r: Int): Iterable[Vec2] = {
+
+      val box = for {
+        x <- -r - 1 to r
+        y <- if (x == r || x == -r-1) -r-1 to r else Seq(-r-1, r)
+      } yield Vec2(x, y)
+
+      box.view.map(_ + centre).filter(inBounds)
+    }
+
+    def diamond(centre: Vec2, r: Int): Iterable[Vec2] = {
 
       val diamond = for {
         x <- -r to r
         y <- Set(r - x.abs, x.abs - r)
       } yield Vec2(x, y)
 
-      diamond.map(_ + centre).filter(inBounds)
+      diamond.view.map(_ + centre).filter(inBounds)
+    }
+
+    def evenDiamond(centre: Vec2, r: Int): Iterable[Vec2] = {
+
+      val diamond = for {
+        x <- -r-1 to r
+        y <- {
+          val h = if (x >= 0) x else -x-1
+          Seq(r - h, h - r-1)
+        }
+      } yield Vec2(x, y)
+
+      diamond.view.map(_ + centre).filter(inBounds)
     }
   }
 
   case class Rectangle(width: Int, height: Int) extends Rectangular {
+
+    val size = Vec2(width, height)
 
     val positions = for {
       x <- 0 until width

@@ -41,7 +41,7 @@ class Chess(val id: Int) extends Game {
 
       val captures = Vec2.horz
         .map(pos + dir + _)
-        .filter(state.enemy)
+        .filter(state.enemy(_))
 
       (forward ++ captures)
     }
@@ -98,7 +98,7 @@ class Chess(val id: Int) extends Game {
     def moves(state: StateT, player: Int) = {
       ActionSet.allMoves(state, player)
         .filterTo(manifold.inBounds)
-        .filterTo(!state.friendly(_))
+        .filterTo(!state.friendly(_, player))
     }
 
     def inCheck(state: StateT, player: Int) = {
@@ -111,11 +111,14 @@ class Chess(val id: Int) extends Game {
 
     actions.map { (action, state) =>
 
-      if (moves(state, state.nextTurn()).isEmpty) {
+      val mate = moves(state, state.nextTurn())
+        .filterStates(!inCheck(_, state.turn))
+        .isEmpty
 
-        val outcome = if (inCheck(state, state.nextTurn()))
-          State.Winner(state.turn) else State.Draw
+      if (mate) {
 
+        val check = inCheck(state, state.nextTurn())
+        val outcome = if (check) State.Winner(state.turn) else State.Draw
         state.endGame(outcome)
 
       } else state.endTurn()

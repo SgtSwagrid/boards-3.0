@@ -26,10 +26,16 @@ class Amazons(val id: Int) extends Game {
   case class Arrow(ownerId: Int) extends AmazonsPiece("pawn")
 
   def start(players: Int) = {
-    new StateT()
-    .withPlayers(2)
-    .addPieces(Seq(Vec2(0, 3), Vec2(3, 0), Vec2(6, 0), Vec2(9, 3)), List.fill(4)(Queen(0)))
-    .addPieces(Seq(Vec2(0, 6), Vec2(3, 9), Vec2(6, 9), Vec2(9, 6)), List.fill(4)(Queen(1)))
+
+    new StateT().withPlayers(2)
+
+      .addPieces(
+        Seq(Vec2(0, 3), Vec2(3, 0), Vec2(6, 0), Vec2(9, 3)),
+        List.fill(4)(Queen(0)))
+        
+      .addPieces(
+        Seq(Vec2(0, 6), Vec2(3, 9), Vec2(6, 9), Vec2(9, 6)),
+        List.fill(4)(Queen(1)))
   }
 
   def actions(state: StateT) = {

@@ -152,8 +152,12 @@ case class State[V <: Vec, P <: Piece] (
 
   def empty(pos: V) = !pieces.isDefinedAt(pos)
   def occupied(pos: V) = pieces.isDefinedAt(pos)
-  def friendly(pos: V) = pieces.get(pos).exists(_.ownerId == turn)
-  def enemy(pos: V) = pieces.get(pos).exists(_.ownerId != turn)
+
+  def friendly(pos: V, player: Int = turn) =
+    pieces.get(pos).exists(_.ownerId == player)
+
+  def enemy(pos: V, player: Int = turn) =
+    pieces.get(pos).exists(_.ownerId != player)
 
   def allEmpty(pos: Iterable[V]) = !pos.exists(pieces.isDefinedAt)
 
