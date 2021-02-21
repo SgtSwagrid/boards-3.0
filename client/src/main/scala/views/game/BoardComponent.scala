@@ -102,7 +102,7 @@ import games.core.Piece
         case (from, to) => tryMove(from, to)
       }
 
-      if (!moved && !placed) {
+      if (!placed && !moved) {
 
         val loc = scene.location(pos).filter { loc =>
           actions.movesFrom.get(loc).nonEmpty
@@ -110,7 +110,8 @@ import games.core.Piece
 
         setState(_.copy(selected = loc, drag = true))
       }
-      autoSelect()
+      autoSelect(actions.actionSeq)
+        .foreach(s => setState(_.copy(selected = Some(s))))
     }
   }
 
@@ -128,12 +129,7 @@ import games.core.Piece
   private def tryPlace(pos: VecT) = {
 
     val place = actions.placesAt.get(pos).headOption
-
-    place foreach { place =>
-      takeAction(place)
-      setState(_.copy(selected = None))
-    }
-
+    place.foreach(takeAction)
     place.isDefined
   }
 
@@ -168,24 +164,31 @@ import games.core.Piece
     Vec2(x, y)
   }
 
-  private def autoSelect() = {
+  private def autoSelect(actions: Seq[Action[VecT]]) = {
 
-    actions.actionSeq match {
-      case Action.Move(from, _) :: actions =>
-        if (actions.forall {
-          case Action.Move(`from`, _) => true
-          case _ => false
-        }) setState(_.copy(selected = Some(from)))
-      case _ => ()
-    }
+    if (canPlay)
+      actions match {
+        case Action.Move(from, _) :: actions
+          if actions.forall {
+            case Action.Move(`from`, _) => true
+            case _ => false
+          } => Some(from)
+        case _ => None
+      }
+    else None
   }
 
   override def componentDidUpdate(prevProps: Props, prevState: State) = {
     
     if (props != prevProps) {
-      setState(_.copy(actions = new ActionCache(game.actions(gameState))))
-      if (canPlay) autoSelect()
-      else setState(_.copy(selected = None, drag = false))
+
+      val actions = new ActionCache(game.actions(gameState))
+
+      setState(_.copy (
+        actions = actions,
+        selected = autoSelect(actions.actionSeq),
+        drag = false
+      ))
     }
 
     val scene = new SceneT(game, gameState, layout, state.canvasSize)
@@ -255,6 +258,8 @@ import games.core.Piece
       case Some(selected) => actions.movesFrom.get(selected).map(_.to)
       case None => actions.places.map(_.pos)
     }
+
+    println(selected, locations)
 
     locations foreach { loc =>
       
