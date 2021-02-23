@@ -8,23 +8,23 @@ case class ActionSet[V <: Vec, P <: Piece, +A <: Action[V]] (
   type S = State[V, P]
 
   def filterActions(p: A => Boolean): ActionSet[V, P, A] = {
-    copy(actionSet.filter { case a -> _ => p(a) })
+    copy(actionSet.view.filter { case a -> _ => p(a) })
   }
 
   def filterStates(p: S => Boolean): ActionSet[V, P, A] = {
-    copy(actionSet.filter { case _ -> s => p(s) })
+    copy(actionSet.view.filter { case _ -> s => p(s) })
   }
 
   def filter(p: (A, S) => Boolean): ActionSet[V, P, A] = {
-    copy(actionSet.filter { case a -> s => p(a, s) })
+    copy(actionSet.view.filter { case a -> s => p(a, s) })
   }
 
   def mapActions[A2 <: Action[V]](f: A => A2): ActionSet[V, P, A2] = {
-    copy(actionSet.map { case a -> s => f(a) -> s })
+    copy(actionSet.view.map { case a -> s => f(a) -> s })
   }
 
   def mapStates(f: S => S): ActionSet[V, P, A] = {
-    copy(actionSet.map { case a -> s => a -> f(s) })
+    copy(actionSet.view.map { case a -> s => a -> f(s) })
   }
 
   def map(f: (A, S) => S): ActionSet[V, P, A] = {
