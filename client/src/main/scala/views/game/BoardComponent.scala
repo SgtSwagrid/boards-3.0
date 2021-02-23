@@ -20,19 +20,16 @@ import games.core.State.{AnyState, Ongoing}
   
   private val canvasId = "boardCanvas"
 
-  case class Props (
-    board: Board,
-    gameState: AnyState,
-    current: Boolean,
-    session: BoardSession
-  )
-
+  case class Props(session: Session[_ <: Vec, _ <: Piece])
+  private lazy val game = props.session.game
+  private def session = props.session
+    .asInstanceOf[Session[game.VecT, game.PieceT]]
+  
   case class State (
     canvasSize: Vec2 = Vec2.zero,
     cursor: Vec2 = Vec2.zero,
     selected: Option[Vec] = None,
-    drag: Boolean = false,
-    actions: ActionCache[_ <: Vec, _ <: Piece] = null
+    drag: Boolean = false
   )
 
   def initialState = State()
@@ -49,28 +46,11 @@ import games.core.State.{AnyState, Ongoing}
 
   private val images = new ImageCache()
 
-  private lazy val game = props.board.game
   private def layout = game.layout(props.session.player.map(_.turnOrder))
   private lazy val background = game.background
   
-  private def gameState = props.gameState.asInstanceOf[StateT]
-
-  private def actions = state.actions
-    .asInstanceOf[ActionCache[VecT, game.PieceT]]
-
-  private type VecT = game.VecT
-  private type StateT = game.StateT
-  private type SceneT = Scene[VecT]
-  
-  private def selected = state.selected.asInstanceOf[Option[VecT]]
-
-  private def ongoing = props.board.ongoing &&
-    gameState.outcome == Ongoing
-
-  private def myTurn = props.session.player
-    .exists(_.turnOrder == props.gameState.turn)
-
-  private def canPlay = ongoing && myTurn && props.current
+  private def selected = state.selected
+    .asInstanceOf[Option[game.VecT]]
 
   override def componentDidMount() = {
 
@@ -85,15 +65,13 @@ import games.core.State.{AnyState, Ongoing}
     canvas.onmousemove = e => setState(_.copy(cursor = cursorPos(e)))
     canvas.onmousedown = e => mouseDown(cursorPos(e))
     canvas.onmouseup = e => mouseUp(cursorPos(e))
-
-    setState(_.copy(actions = new ActionCache(game.actions(gameState))))
   }
 
   private def mouseDown(pos: Vec2) = {
 
-    if (canPlay) {
+    if (session.canPlay) {
 
-      val scene = new SceneT(game, gameState, layout, state.canvasSize)
+      val scene = new Scene(game, session.visibleState, layout, state.canvasSize)
 
       val placed = scene.location(pos).exists(tryPlace)
 
@@ -104,12 +82,12 @@ import games.core.State.{AnyState, Ongoing}
       if (!placed && !moved) {
 
         val loc = scene.location(pos).filter { loc =>
-          actions.movesFrom.get(loc).nonEmpty
+          session.movesFrom.get(loc).nonEmpty
         }
 
         setState(_.copy(selected = loc, drag = true))
       }
-      autoSelect(actions.actionSeq)
+      autoSelect(session.sortedActions)
         .foreach(s => setState(_.copy(selected = Some(s))))
     }
   }
@@ -118,24 +96,24 @@ import games.core.State.{AnyState, Ongoing}
 
     setState(_.copy(drag = false))
 
-    val scene = new SceneT(game, gameState, layout, state.canvasSize)
+    val scene = new Scene(game, session.visibleState, layout, state.canvasSize)
 
     (selected zip scene.location(pos)) foreach {
       case (from, to) => tryMove(from, to)
     }
   }
 
-  private def tryPlace(pos: VecT) = {
+  private def tryPlace(pos: game.VecT) = {
 
-    val place = actions.placesAt.get(pos).headOption
+    val place = session.placesAt.get(pos).headOption
     place.foreach(takeAction)
     place.isDefined
   }
 
-  private def tryMove(from: VecT, to: VecT) = {
+  private def tryMove(from: game.VecT, to: game.VecT) = {
 
     val move = Action.Move(from, to)
-    val valid = actions.actions.contains(move)
+    val valid = session.actions.contains(move)
       
     if (valid) {
       takeAction(move)
@@ -145,12 +123,12 @@ import games.core.State.{AnyState, Ongoing}
     valid
   }
 
-  private def takeAction(action: Action[VecT]) {
+  private def takeAction(action: Action[game.VecT]) {
 
-    val actionId = actions.indexOf(action)
+    val actionId = session.sortedActions.indexOf(action)
     
     if (actionId != -1) {
-      val request: BoardRequest = TakeAction(props.board.id, actionId)
+      val request: BoardRequest = TakeAction(session.board.id, actionId)
       props.session.socket.send(request.asJson.toString)
     }
   }
@@ -163,9 +141,9 @@ import games.core.State.{AnyState, Ongoing}
     Vec2(x, y)
   }
 
-  private def autoSelect(actions: Seq[Action[VecT]]) = {
+  private def autoSelect(actions: Seq[Action[game.VecT]]) = {
 
-    if (canPlay)
+    if (session.canPlay)
       actions match {
         case Action.Move(from, _) :: actions
           if actions.forall {
@@ -181,27 +159,19 @@ import games.core.State.{AnyState, Ongoing}
     
     if (props != prevProps) {
 
-      if (canPlay) {
-
-        val actions = new ActionCache(game.actions(gameState))
+      if (session.canPlay) {
 
         setState(_.copy (
-          actions = actions,
-          selected = autoSelect(actions.actionSeq),
+          selected = autoSelect(session.sortedActions),
           drag = false
         ))
 
       } else {
-
-        setState(_.copy (
-          actions = new ActionCache(ActionSet.empty(gameState)),
-          selected = None,
-          drag = false
-        ))
+        setState(_.copy (selected = None, drag = false))
       }
     }
 
-    val scene = new SceneT(game, gameState, layout, state.canvasSize)
+    val scene = new Scene(game, session.visibleState, layout, state.canvasSize)
 
     canvas.width = canvas.clientWidth
     canvas.height = canvas.clientHeight
@@ -209,18 +179,18 @@ import games.core.State.{AnyState, Ongoing}
     draw(scene)
   }
 
-  private def draw(scene: SceneT): Unit = {
+  private def draw(scene: Scene[game.VecT]): Unit = {
 
     scene.locations.foreach(drawTile(scene, _))
     
-    if (canPlay) drawHints(scene)
+    if (session.canPlay) drawHints(scene)
     
     selected foreach { loc =>   
       if (state.drag) drawDrag(scene, loc)
     }
   }
 
-  private def drawTile(scene: SceneT, loc: VecT) = {
+  private def drawTile(scene: Scene[game.VecT], loc: game.VecT) = {
 
     val Vec2(x, y) = scene.position(loc)
     val Vec2(width, height) = scene.size(loc)
@@ -230,7 +200,7 @@ import games.core.State.{AnyState, Ongoing}
 
     context.fillRect(x, y, width, height)
     
-    gameState.pieces.get(loc) foreach { piece =>
+    session.visibleState.pieces.get(loc) foreach { piece =>
       if (!(selected == Some(loc) && state.drag)) {
 
         val image = images.image(piece.texture)
@@ -240,11 +210,11 @@ import games.core.State.{AnyState, Ongoing}
     }
   }
 
-  private def tileColour(scene: SceneT, loc: VecT) = {
+  private def tileColour(scene: Scene[game.VecT], loc: game.VecT) = {
 
     val base = background.colour(loc)
 
-    val changes = gameState.actionsThisTurn flatMap {
+    val changes = session.visibleState.actionsThisTurn flatMap {
       case Action.Place(pos, _) => Seq(pos)
       case Action.Move(from, to) => Seq(from, to)
       case Action.Destroy(pos) => Seq(pos)
@@ -262,11 +232,11 @@ import games.core.State.{AnyState, Ongoing}
       highlighted.darken(25) else highlighted
   }
 
-  private def drawHints(scene: SceneT) = {
+  private def drawHints(scene: Scene[game.VecT]) = {
 
     val locations = selected match {
-      case Some(selected) => actions.movesFrom.get(selected).map(_.to)
-      case None => actions.places.map(_.pos)
+      case Some(selected) => session.movesFrom.get(selected).map(_.to)
+      case None => session.places.map(_.pos)
     }
 
     locations foreach { loc =>
@@ -276,7 +246,7 @@ import games.core.State.{AnyState, Ongoing}
       val tileSize = scene.size(loc)
       val size = (tileSize.x min tileSize.y) / 2
 
-      if (gameState.pieces.isDefinedAt(loc)) {
+      if (session.visibleState.pieces.isDefinedAt(loc)) {
 
         context.strokeStyle = Colour.naval.hex
         context.globalAlpha = 0.8
@@ -296,10 +266,10 @@ import games.core.State.{AnyState, Ongoing}
     }
   }
 
-  private def drawDrag(scene: SceneT, loc: VecT) = {
+  private def drawDrag(scene: Scene[game.VecT], loc: game.VecT) = {
 
     val Vec2(width, height) = scene.size(loc)
-    val piece = gameState.pieces(loc)
+    val piece = session.visibleState.pieces(loc)
     val image = images.image(piece.texture)
 
     val Vec2(mx, my) = state.cursor
