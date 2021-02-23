@@ -23,37 +23,17 @@ import games.core.State.AnyState
     socket: WebSocket
   )
 
-  case class State (
-    board: Option[Board],
-    players: Seq[Player],
-    users: Seq[User],
-    currentState: Option[AnyState],
-    visibleState: Option[AnyState],
-    player: Option[Player]
-  )
+  case class State(session: Option[Session.AnySession] = None)
 
-  def initialState = State(None, Seq(), Seq(), None, None, None)
+  def initialState = State()
 
-  def session = BoardSession(props.user, state.player, props.socket)
+  def render() = state.session.map { session => div (
 
-  def render() = for {
-    board <- state.board
-    currentState <- state.currentState
-    visibleState <- state.visibleState
-  } yield {
+    SidebarComponent(session,
+      s => setState(_.copy(session = Some(s)))),
+    BoardComponent(session)
+  )}
 
-    div (
-      SidebarComponent(board, state.players, state.users,
-        currentState.asInstanceOf[board.game.StateT],
-        visibleState.asInstanceOf[board.game.StateT],
-        session,
-        s => setState(_.copy(visibleState = Some(s)))),
-
-      BoardComponent(board,
-        visibleState.asInstanceOf[board.game.StateT],
-        currentState == visibleState, session)
-    )
-  }
 
   override def componentDidMount() =
     props.socket.onmessage = { (e: MessageEvent) =>
@@ -61,50 +41,35 @@ import games.core.State.AnyState
 
         case SetBoard(board) => {
 
-          if (!board.isDefined) window.location.href = "/"
+          board match {
 
-          setState(_.copy (
-            board = board,
-            currentState = board map { board =>
-              board.game.start(state.players.size)
+            case Some(board) => {
+          
+              val session = state.session.map { session =>
+                session.setBoard(board)
+              }.getOrElse(Session(props.user, props.socket, board))
+
+              setState(_.copy(session = Some(session)))
             }
-          ))
+
+            case None => window.location.href = "/"
+          }
         }
 
-        case SetPlayers(players, users) =>
+        case SetPlayers(players, users) => {
 
-          setState(_.copy (
-            players = players,
-            users = users,
-
-            player = (players zip users)
-              .find { case (_, user) => user.id == props.user.id }
-              .map { case (player, _) => player }
-          ))
+          val session = state.session.get.setPlayers(players, users)
+          setState(_.copy(session = Some(session)))
+        }
 
         case PushActions(actions) => {
 
-          (state.board zip state.currentState) foreach {
-            case (board, state) =>
-
-              val oldState = state.asInstanceOf[board.game.StateT]
-
-              val newState = actions.foldLeft(oldState) { 
-                (gameState, action) =>
-
-                  val states = board.game.actions(gameState).successors.toSeq
-
-                  if (states.isDefinedAt(action.actionId)
-                      && gameState.turn == action.turn)
-                    states(action.actionId)
-                  else gameState
-              }
-
-              setState(_.copy (
-                currentState = Some(newState),
-                visibleState = Some(newState)
-              ))
+          val session = actions.foldLeft(state.session.get) {
+            (session, action) =>
+              session.takeAction(action.actionId, action.turn)
           }
+
+          setState(_.copy(session = Some(session)))
         }
       }
     }

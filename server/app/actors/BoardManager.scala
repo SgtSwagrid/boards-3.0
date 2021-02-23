@@ -98,15 +98,44 @@ class BoardManager(db: Database)
           } if (started) broadcast(boardId, SetBoard(board))
       }
 
+      case ResignGame(boardId) => {
+
+        player foreach { player =>
+          
+          for {
+            _ <- boards.resign(boardId, player.id)
+            (players, users) <- boards.getPlayersWithUsers(boardId)
+
+          } broadcast(boardId, SetPlayers(players, users))
+        }
+      }
+
+      case DrawGame(boardId) => {
+
+        player foreach { player =>
+          
+          for {
+            _ <- boards.draw(boardId, player.id)
+            (players, users) <- boards.getPlayersWithUsers(boardId)
+
+          } broadcast(boardId, SetPlayers(players, users))
+        }
+      }
+
       case TakeAction(boardId, actionId) => {
 
         player foreach { player =>
 
           if (board.exists(_.ongoing)) {
 
-            boards.takeAction(boardId, actionId, player.turnOrder)
-            val action = ActionId(actionId, player.turnOrder)
-            broadcast(boardId, PushActions(Seq(action)))
+            for {
+              _ <- boards.takeAction(boardId, actionId, player.turnOrder)
+              (players, users) <- boards.getPlayersWithUsers(boardId)
+            } {
+              val action = ActionId(actionId, player.turnOrder)
+              broadcast(boardId, PushActions(Seq(action)))
+              broadcast(boardId, SetPlayers(players, users))
+            }
           }
         }
       }

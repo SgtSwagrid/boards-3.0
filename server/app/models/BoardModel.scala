@@ -157,6 +157,9 @@ class BoardModel(db: Database)(implicit ec: ExecutionContext) {
     val action = for {
       actions <- DBAction.getActionsByBoard(boardId)
       _ <- Actions += Action(-1, boardId, actionId, actions.size, playerOrder)
+      players <- DBAction.getPlayersByBoard(boardId)
+      _ <- DBIO.sequence(players.map(p => DBAction.resign(boardId, p.id, false)))
+      _ <- DBIO.sequence(players.map(p => DBAction.draw(boardId, p.id, false)))
       _ <- DBAction.touchBoard(boardId)
     } yield ()
 
@@ -169,6 +172,14 @@ class BoardModel(db: Database)(implicit ec: ExecutionContext) {
 
   def deleteBoard(boardId: String): Future[Boolean] = {
     db.run(Boards.filter(_.id === boardId).delete).map(_ > 0)
+  }
+
+  def resign(boardId: String, playerId: Int): Future[Boolean] = {
+    db.run(DBAction.resign(boardId, playerId)).map(_ > 0)
+  }
+
+  def draw(boardId: String, playerId: Int): Future[Boolean] = {
+    db.run(DBAction.draw(boardId, playerId)).map(_ > 0)
   }
 
   def searchBoards(query: SearchQuery[BoardFilter]):
@@ -312,5 +323,11 @@ class BoardModel(db: Database)(implicit ec: ExecutionContext) {
 
     def deleteBoard(boardId: String) =
       DBQuery.boardById(boardId).delete
+
+    def resign(boardId: String, playerId: Int, resign: Boolean = true) =
+      DBQuery.playerById(playerId).map(_.resign).update(resign)
+
+    def draw(boardId: String, playerId: Int, draw: Boolean = true) =
+      DBQuery.playerById(playerId).map(_.draw).update(draw)
   }
 }

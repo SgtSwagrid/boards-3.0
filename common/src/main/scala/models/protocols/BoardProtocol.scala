@@ -13,6 +13,8 @@ object BoardProtocol {
   case class DemotePlayer(boardId: String, playerId: Int) extends BoardRequest
   case class DeleteGame(boardId: String) extends BoardRequest
   case class StartGame(boardId: String) extends BoardRequest
+  case class ResignGame(boardId: String) extends BoardRequest
+  case class DrawGame(boardId: String) extends BoardRequest
   case class TakeAction(boardId: String, actionId: Int) extends BoardRequest
 
   sealed trait BoardResponse

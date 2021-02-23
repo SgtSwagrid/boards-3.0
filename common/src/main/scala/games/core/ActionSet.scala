@@ -136,7 +136,7 @@ object ActionSet {
     }
     
     def attacking(pos: V): ActionSet[V, P, A] = {
-      moveSet.filterActions(_.to == pos)
+      moveSet.filterActions(_.to == pos).asInstanceOf[ActionSet[V, P, A]]
     }
   }
 }
