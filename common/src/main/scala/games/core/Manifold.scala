@@ -7,6 +7,7 @@ trait Manifold[V <: Vec] {
 
     val positions: Seq[V]
     def inBounds(pos: V): Boolean
+    val area: Int
   }
 
 object Manifold {
@@ -17,6 +18,12 @@ object Manifold {
       val dir = start directionTo end
       val size = (start stepsTo end) + 1
       ray(start, dir, size)
+    }
+
+    def linesThrough(pos: Vec2, dir: Vec2, length: Int): Iterable[Iterable[Vec2]] = {
+      (0 until length).map { l => 
+        ray(pos, dir, l) ++ Seq(pos) ++ ray(pos, -dir, length - l)
+      }
     }
 
     def ray(start: Vec2, dir: Vec2): Iterable[Vec2] = {
@@ -84,6 +91,7 @@ object Manifold {
   case class Rectangle(width: Int, height: Int) extends Rectangular {
 
     val size = Vec2(width, height)
+    val area = width * height
 
     val positions = for {
       x <- 0 until width
@@ -115,6 +123,8 @@ object Manifold {
 
   case class Rows(rows: Row*) extends Rectangular {
 
+    val area: Int = rows.map(_.area).sum
+
     val positions = for {
       (row, y) <- rows.zipWithIndex
       x <- row.positions
@@ -134,6 +144,8 @@ object Manifold {
   }
 
   case class Row(sections: Section*) {
+
+    val area = sections.map(_.size).sum
 
     val offsets = (Section(0) +: sections).sliding(2).map {
       case Seq(l, r) => l.size + r.offset
