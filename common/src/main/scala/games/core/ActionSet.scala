@@ -39,7 +39,7 @@ case class ActionSet[V <: Vec, P <: Piece, +A <: Action[V]] (
   def isEmpty: Boolean = !actionSet.headOption.isDefined
 
   def actions: Iterable[A] = {
-    actionSet.map { case a -> _ => a }
+    actionSet.view.map { case a -> _ => a }
   }
 
   def places: Iterable[Action.Place[V]] = {
@@ -55,7 +55,7 @@ case class ActionSet[V <: Vec, P <: Piece, +A <: Action[V]] (
   }
 
   def successors: Iterable[S] = {
-    actionSet.map { case a -> s =>
+    actionSet.view.map { case a -> s =>
       s.copy(previous = Some(start), action = Some(a))
     }
   }
