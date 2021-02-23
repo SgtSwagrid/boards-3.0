@@ -100,11 +100,9 @@ import slinky.core.facade.ReactElement
   case class Props(session: Session.AnySession)
   private def session = props.session
 
-  def render() = session.status match {
+  def render() = session.visibleOutcome match {
 
-    case Session.Setup => span()
-
-    case Session.Outcome(State.Ongoing) => {
+    case State.Ongoing => {
 
       val turn = session.visibleState.turn
 
@@ -119,7 +117,7 @@ import slinky.core.facade.ReactElement
       }
     }
 
-    case Session.Outcome(State.Winner(winnerId)) => {
+    case State.Winner(winnerId) => {
 
       Option.when(session.users.isDefinedAt(winnerId)) {
 
@@ -132,7 +130,7 @@ import slinky.core.facade.ReactElement
       }
     }
 
-    case Session.Outcome(State.Draw) => {
+    case State.Draw => {
       span(className := "medium-text yellow-text text-darken-2") ("Draw")
     }
   }
@@ -162,7 +160,7 @@ import slinky.core.facade.ReactElement
       }
     )
 
-    case Session.Outcome(State.Ongoing) => div (
+    case Session.Playing => div (
 
       Option.when(props.session.player.isDefined) { div (
 
@@ -186,15 +184,12 @@ import slinky.core.facade.ReactElement
         ),
 
         span(className := "small-text white-text") (
-          (session.players zip session.users)
-            .filter { case (p, _) => p.draw }
-            .map { case (_, u) => u.username }
-            .intersperse(" • ")
+          session.drawnUsers.map(_.username).intersperse(" • ")
         ),
       )}
     )
 
-    case Session.Outcome(State.Winner(_)) | Session.Outcome(State.Draw) => {
+    case Session.Ended => {
 
       Option.when(session.isOwner) {
         ButtonComponent("Delete Game", "/assets/img/trash.svg", true, session.deleteGame)

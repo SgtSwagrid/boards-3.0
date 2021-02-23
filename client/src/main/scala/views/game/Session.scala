@@ -37,19 +37,24 @@ case class Session[V <: Vec, P <: Piece] (
     .filter { case (player, _) => player.draw }
     .unzip
 
+  val currentOutcome =
+    if (resignedPlayers.size == players.size-1)
+      State.Winner(players.find(!_.resign).get.turnOrder)
+    else if (drawnPlayers.size == players.size)
+      State.Draw
+    else currentState.outcome
+
+  val visibleOutcome =
+    if (visibleState == currentState) currentOutcome
+    else visibleState.outcome
+
   val status =
     if (board.status == 0) Session.Setup
-    else if (visibleState == currentState) {
-      if (drawnPlayers.size == players.size)
-        Session.Outcome(State.Draw)
-      else if (resignedPlayers.size == players.size-1) {
-        val winner = players.find(!_.resign).get.turnOrder
-        Session.Outcome(State.Winner(winner))
-      } else Session.Outcome(State.Ongoing)
-    } else Session.Outcome(State.Ongoing)
+    else if (currentOutcome == State.Ongoing) Session.Playing
+    else Session.Ended
 
   val current = visibleState == currentState
-  val ongoing = status == Session.Outcome(State.Ongoing)
+  val ongoing = status == Session.Playing
   val myTurn = player.exists(_.turnOrder == visibleState.turn)
   val canPlay = current && ongoing && myTurn
 
@@ -163,7 +168,8 @@ object Session {
 
   sealed trait Status
   case object Setup extends Status
-  case class Outcome(outcome: State.Outcome) extends Status
+  case object Playing extends Status
+  case object Ended extends Status
 
   def apply(user: User, socket: WebSocket, board: Board) = {
     val game = board.game
