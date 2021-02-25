@@ -4,26 +4,35 @@ import models.{Board, Player, User}
 
 object BoardProtocol {
   
-  sealed trait BoardRequest { val boardId: String }
+  sealed trait BoardRequest
   
-  case class NewSpectator(boardId: String) extends BoardRequest
-  case class JoinGame(boardId: String, userId: Int) extends BoardRequest
-  case class RemovePlayer(boardId: String, playerId: Int) extends BoardRequest
-  case class PromotePlayer(boardId: String, playerId: Int) extends BoardRequest
-  case class DemotePlayer(boardId: String, playerId: Int) extends BoardRequest
-  case class DeleteGame(boardId: String) extends BoardRequest
-  case class StartGame(boardId: String) extends BoardRequest
-  case class ResignGame(boardId: String) extends BoardRequest
-  case class DrawGame(boardId: String) extends BoardRequest
-  case class TakeAction(boardId: String, actionId: Int) extends BoardRequest
+  case object NewSpectator                  extends BoardRequest
+  case class  AddPlayer     (userId: Int)   extends BoardRequest
+  case class  RemovePlayer  (playerId: Int) extends BoardRequest
+  case class  PromotePlayer (playerId: Int) extends BoardRequest
+  case class  DemotePlayer  (playerId: Int) extends BoardRequest
+  case object StartGame                     extends BoardRequest
+  case object DeleteGame                    extends BoardRequest
+  case object ResignGame                    extends BoardRequest
+  case object DrawGame                      extends BoardRequest
+  case object RematchGame                   extends BoardRequest
+  case class  ForkGame      (ply: Int)      extends BoardRequest
+  case class  TakeAction    (actionId: Int) extends BoardRequest
 
   sealed trait BoardResponse
 
-  case class SetBoard(board: Option[Board]) extends BoardResponse
-  case class SetPlayers(players: Seq[Player], users: Seq[User]) extends BoardResponse
-  case class PushActions(actions: Seq[ActionId]) extends BoardResponse
+  case class UpdateSession (
+    board: Board,
+    players: Seq[Player],
+    users: Seq[User],
+    rematch: Option[Board],
+    forks: Seq[Board]
+  ) extends BoardResponse
 
-  case class ActionId(actionId: Int, turn: Int)
+  case class PushActions(actions: Seq[ActionLog]) extends BoardResponse
+  case class Redirect(board: Option[Board]) extends BoardResponse
+
+  case class ActionLog(actionId: Int, turn: Int)
 
   sealed trait BoardFilter
 

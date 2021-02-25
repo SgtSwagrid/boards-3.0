@@ -56,7 +56,7 @@ case class ActionSet[V <: Vec, P <: Piece, +A <: Action[V]] (
 
   def successors: Iterable[S] = {
     actionSet.view.map { case a -> s =>
-      s.copy(previous = Some(start), action = Some(a))
+      s.copy(previous = Some(start), action = Some(a), ply = s.ply+1)
     }
   }
 }

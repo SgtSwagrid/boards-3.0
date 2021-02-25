@@ -17,13 +17,18 @@ import games.core.State.AnyState
 
 @react class GameComponent extends Component {
 
+  private def gameRoute(boardId: String) = s"/games/board/$boardId"
+
   case class Props (
     boardId: String,
     user: User,
     socket: WebSocket
   )
 
-  case class State(session: Option[Session.AnySession] = None)
+  case class State (
+    session: Option[Session.AnySession] = None,
+    gameState: Option[AnyState] = None
+  )
 
   def initialState = State()
 
@@ -35,31 +40,35 @@ import games.core.State.AnyState
   )}
 
 
-  override def componentDidMount() =
+  override def componentDidMount() = {
+
     props.socket.onmessage = { (e: MessageEvent) =>
+      
       decode[BoardResponse](e.data.toString).toOption.get match {
 
-        case SetBoard(board) => {
+        case UpdateSession(board, players, users, rematch, forks) => {
 
-          board match {
+          val gameState = {
 
-            case Some(board) => {
-          
-              val session = state.session.map { session =>
-                session.setBoard(board)
-              }.getOrElse(Session(props.user, props.socket, board))
+            if (!state.session.exists(_.status != Session.Setup)) {
 
-              setState(_.copy(session = Some(session)))
-            }
+              val numPlayers = {
+                if (board.status > 0) players.size
+                else board.game.players.max
+              }
 
-            case None => window.location.href = "/"
+              board.game.start(numPlayers)
+
+            } else state.session.get.currentState
+              .asInstanceOf[board.game.StateT]
           }
-        }
 
-        case SetPlayers(players, users) => {
+          val newSession = Session (
+            props.user, props.socket, board, players,
+            users, gameState, gameState, rematch, forks
+          )
 
-          val session = state.session.get.setPlayers(players, users)
-          setState(_.copy(session = Some(session)))
+          setState(_.copy(session = Some(newSession), gameState = Some(gameState)))
         }
 
         case PushActions(actions) => {
@@ -71,6 +80,12 @@ import games.core.State.AnyState
 
           setState(_.copy(session = Some(session)))
         }
+
+        case Redirect(board) => window.location.href = board match {
+          case Some(board) => gameRoute(board.id)
+          case None => "/"
+        }
       }
     }
+  }
 }

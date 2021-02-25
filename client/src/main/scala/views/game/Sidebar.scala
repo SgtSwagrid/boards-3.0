@@ -21,6 +21,8 @@ import slinky.core.facade.ReactElement
 
 @react class SidebarComponent extends StatelessComponent {
 
+  private def gameRoute(boardId: String) = s"/games/board/$boardId"
+
   case class Props (
     session: Session.AnySession,
     update: Session.AnySession => Unit
@@ -32,8 +34,20 @@ import slinky.core.facade.ReactElement
   def render() = div(className := "sidebar grey darken-2 z-depth-2") (
 
     div(className := "sidebar-header grey darken-3") (
+
       div(className := "medium-text white-text") (session.game.name),
-      div(className := "small-text grey-text") ("#" + session.board.id)
+      span(className := "small-text grey-text text-lighten-1") ("#" + session.board.id),
+      
+      session.board.rematchBaseId.map { rematch =>
+        span(className := "small-text blue-grey-text text-lighten-1") (
+          " [Rematch of ", a(href := gameRoute(rematch))("#" + rematch), "]"
+        )
+
+      } orElse session.board.forkBaseId.map { fork =>
+        span(className := "small-text blue-grey-text text-lighten-1") (
+          " [Forked from ", a(href := gameRoute(fork))("#" + fork), "]"
+        )
+      }
     ),
     
     div(className := "sidebar-body") (
@@ -100,38 +114,45 @@ import slinky.core.facade.ReactElement
   case class Props(session: Session.AnySession)
   private def session = props.session
 
-  def render() = session.visibleOutcome match {
+  def render() = session.status match {
 
-    case State.Ongoing => {
-
-      val turn = session.visibleState.turn
-
-      Option.when(session.users.isDefinedAt(turn)) {
-
-        val user = session.users(turn)
-        
-        span(className := "medium-text yellow-text text-darken-2") (
-          if (user == session.user) "Your Turn"
-          else s"${user.username}'s Turn"
-        )
-      }
+    case Session.Setup => {
+      span(className := "medium-text yellow-text text-darken-2") ("Pending")
     }
 
-    case State.Winner(winnerId) => {
+    case Session.Playing | Session.Ended => session.visibleOutcome match {
 
-      Option.when(session.users.isDefinedAt(winnerId)) {
+      case State.Ongoing => {
 
-        val user = session.users(winnerId)
+        val turn = session.visibleState.turn
 
-        span(className := "medium-text yellow-text text-darken-2") (
-          if (user == session.user) "You Won"
-          else s"${user.username} Won"
-        )
+        Option.when(session.users.isDefinedAt(turn)) {
+
+          val user = session.users(turn)
+          
+          span(className := "medium-text yellow-text text-darken-2") (
+            if (user == session.user) "Your Turn"
+            else s"${user.username}'s Turn"
+          )
+        }
       }
-    }
 
-    case State.Draw => {
-      span(className := "medium-text yellow-text text-darken-2") ("Draw")
+      case State.Winner(winnerId) => {
+
+        Option.when(session.users.isDefinedAt(winnerId)) {
+
+          val user = session.users(winnerId)
+
+          span(className := "medium-text yellow-text text-darken-2") (
+            if (user == session.user) "You Won"
+            else s"${user.username} Won"
+          )
+        }
+      }
+
+      case State.Draw => {
+        span(className := "medium-text yellow-text text-darken-2") ("Draw")
+      }
     }
   }
 }
@@ -160,11 +181,11 @@ import slinky.core.facade.ReactElement
       }
     )
 
-    case Session.Playing => div (
+    case Session.Playing =>
 
       Option.when(props.session.player.isDefined) { div (
 
-        ButtonComponent(
+        ButtonComponent (
           "Resign Game", "/assets/img/icon/resign.svg",
           true, session.resignGame
         ),
@@ -187,14 +208,25 @@ import slinky.core.facade.ReactElement
           session.drawnUsers.map(_.username).intersperse(" • ")
         ),
       )}
-    )
 
-    case Session.Ended => {
+    case Session.Ended =>
+    
+      Option.when(session.player.isDefined) { div (
 
-      Option.when(session.isOwner) {
-        ButtonComponent("Delete Game", "/assets/img/trash.svg", true, session.deleteGame)
-      }
-    }
+        Option.when(session.isOwner) {
+          ButtonComponent("Delete Game", "/assets/img/trash.svg", true, session.deleteGame)
+        },
+
+        ButtonComponent (
+          if (session.rematch.isDefined) "Accept Rematch" else "Offer Rematch",
+          "/assets/img/icon/rematch.svg", true, session.rematchGame
+        ),
+
+        ButtonComponent (
+          "Fork Game",
+          "/assets/img/icon/fork.svg", true, session.forkGame
+        )
+      )}
   }
 }
 

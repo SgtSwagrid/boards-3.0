@@ -8,8 +8,9 @@ case class Board (
   gameId: Int,
   isPublic: Boolean = true,
   status: Int = 0,
-  rematchBoardId: Option[String] = None,
-  parentBoardId: Option[String] = None,
+  rematchBaseId: Option[String] = None,
+  forkBaseId: Option[String] = None,
+  forkPly: Option[Int] = None,
   modified: String = LocalDateTime.now().toString
 ) {
   val game = Manifest.Games(gameId)

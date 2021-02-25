@@ -15,8 +15,9 @@ object BoardSchema {
     val gameId = column[Int]("GameId")
     val isPublic = column[Boolean]("IsPublic")
     val status = column[Int]("Status")
-    val rematchBoardId = column[Option[String]]("RematchBoardId")
-    val parentBoardId = column[Option[String]]("ParentBoardId")
+    val rematchBaseId = column[Option[String]]("RematchBaseId")
+    val forkBaseId = column[Option[String]]("ForkBaseId")
+    val forkPly = column[Option[Int]]("ForkPly")
     val modified = column[String]("Modified")
 
     /*val rematchBoardFk = (foreignKey("RematchBoardFk", rematchBoardId, Boards)
@@ -26,7 +27,7 @@ object BoardSchema {
       (_.id.?, onDelete=ForeignKeyAction.SetNull))*/
 
     override def * : ProvenShape[Board] = {
-      (id, gameId, isPublic, status, rematchBoardId, parentBoardId, modified) <>
+      (id, gameId, isPublic, status, rematchBaseId, forkBaseId, forkPly, modified) <>
         (Board.tupled, Board.unapply)
     }
   }

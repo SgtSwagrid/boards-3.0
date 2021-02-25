@@ -12,13 +12,15 @@ import games.core.{Action, ActionSet, Piece, State, Vec}
 import models.protocols.BoardProtocol._
 
 case class Session[V <: Vec, P <: Piece] (
-  val user: User,
-  val socket: WebSocket,
-  val board: Board,
-  val players: Seq[Player],
-  val users: Seq[User],
-  val currentState: State[V, P],
-  val visibleState: State[V, P]
+  user: User,
+  socket: WebSocket,
+  board: Board,
+  players: Seq[Player],
+  users: Seq[User],
+  currentState: State[V, P],
+  visibleState: State[V, P],
+  rematch: Option[Board],
+  forks: Seq[Board]
 ) {
   
   val game = board.game
@@ -37,21 +39,30 @@ case class Session[V <: Vec, P <: Piece] (
     .filter { case (player, _) => player.draw }
     .unzip
 
-  val currentOutcome =
-    if (resignedPlayers.size == players.size-1)
-      State.Winner(players.find(!_.resign).get.turnOrder)
-    else if (drawnPlayers.size == players.size)
-      State.Draw
-    else currentState.outcome
+  val currentOutcome = {
 
-  val visibleOutcome =
+    if (board.status == 0)
+      visibleState.outcome
+
+    else if (resignedPlayers.size == players.size-1 && players.size != 0)
+      State.Winner(players.find(!_.resign).get.turnOrder)
+
+    else if (drawnPlayers.size == players.size && players.size != 0)
+      State.Draw
+      
+    else currentState.outcome
+  }
+
+  val visibleOutcome = {
     if (visibleState == currentState) currentOutcome
     else visibleState.outcome
+  }
 
-  val status =
+  val status = {
     if (board.status == 0) Session.Setup
     else if (currentOutcome == State.Ongoing) Session.Playing
     else Session.Ended
+  }
 
   val current = visibleState == currentState
   val ongoing = status == Session.Playing
@@ -95,48 +106,68 @@ case class Session[V <: Vec, P <: Piece] (
   }
 
   def startGame() = {
-    val action: BoardRequest = StartGame(board.id)
+    val action: BoardRequest = StartGame
     socket.send(action.asJson.toString)
   }
 
   def deleteGame() = {
-    val action: BoardRequest = DeleteGame(board.id)
+    val action: BoardRequest = DeleteGame
     socket.send(action.asJson.toString)
   }
 
   def joinGame() = {
-    val action: BoardRequest = JoinGame(board.id, user.id)
+    val action: BoardRequest = AddPlayer(user.id)
     socket.send(action.asJson.toString)
   }
 
   def leaveGame() = {
-    val action: BoardRequest = RemovePlayer(board.id, player.get.id)
+    val action: BoardRequest = RemovePlayer(player.get.id)
     socket.send(action.asJson.toString)
   }
 
   def removePlayer(player: Player) = {
-    val action: BoardRequest = RemovePlayer(board.id, player.id)
+    val action: BoardRequest = RemovePlayer(player.id)
     socket.send(action.asJson.toString)
   }
 
   def promotePlayer(player: Player) = {
-    val action: BoardRequest = PromotePlayer(board.id, player.id)
+    val action: BoardRequest = PromotePlayer(player.id)
     socket.send(action.asJson.toString)
   }
 
   def demotePlayer(player: Player) = {
-    val action: BoardRequest = DemotePlayer(board.id, player.id)
+    val action: BoardRequest = DemotePlayer(player.id)
     socket.send(action.asJson.toString)
   }
 
   def resignGame() = {
-    val action: BoardRequest = ResignGame(board.id)
+    val action: BoardRequest = ResignGame
     socket.send(action.asJson.toString)
   }
 
   def drawGame() = {
-    val action: BoardRequest = DrawGame(board.id)
+    val action: BoardRequest = DrawGame
     socket.send(action.asJson.toString)
+  }
+
+  def rematchGame() = {
+    val action: BoardRequest = RematchGame
+    socket.send(action.asJson.toString)
+  }
+
+  def forkGame() = {
+    val action: BoardRequest = ForkGame(visibleState.ply)
+    socket.send(action.asJson.toString)
+  }
+
+  def takeAction(action: Action[V]) {
+
+    val actionId = sortedActions.indexOf(action)
+    
+    if (actionId != -1) {
+      val request: BoardRequest = TakeAction(actionId)
+      socket.send(request.asJson.toString)
+    }
   }
 
   def goto(state: State.AnyState) = {
@@ -170,10 +201,4 @@ object Session {
   case object Setup extends Status
   case object Playing extends Status
   case object Ended extends Status
-
-  def apply(user: User, socket: WebSocket, board: Board) = {
-    val game = board.game
-    val state = game.start(game.players.max)
-    new Session[game.VecT, game.PieceT](user, socket, board, Nil, Nil, state, state)
-  }
 }

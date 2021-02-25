@@ -11,7 +11,7 @@ class BoardActor (
   userId: Int
 ) extends Actor {
 
-  manager ! (self, userId, NewSpectator(boardId))
+  manager ! (self, userId, NewSpectator)
 
   def receive = {
     case req: String => decode[BoardRequest](req) match {

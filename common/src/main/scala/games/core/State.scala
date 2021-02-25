@@ -17,6 +17,7 @@ case class State[V <: Vec, P <: Piece] (
 
   stage: Int = 0,
   turn: Int = 0,
+  ply: Int = 0,
   outcome: State.Outcome = State.Ongoing,
 
   previous: Option[State[V, P]] = None,

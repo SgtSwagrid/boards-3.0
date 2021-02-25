@@ -158,8 +158,8 @@ class BoardModel(db: Database)(implicit ec: ExecutionContext) {
       actions <- DBAction.getActionsByBoard(boardId)
       _ <- Actions += Action(-1, boardId, actionId, actions.size, playerOrder)
       players <- DBAction.getPlayersByBoard(boardId)
-      _ <- DBIO.sequence(players.map(p => DBAction.resign(boardId, p.id, false)))
-      _ <- DBIO.sequence(players.map(p => DBAction.draw(boardId, p.id, false)))
+      _ <- DBIO.sequence(players.map(p => DBAction.setResign(boardId, p.id, false)))
+      _ <- DBIO.sequence(players.map(p => DBAction.setDraw(boardId, p.id, false)))
       _ <- DBAction.touchBoard(boardId)
     } yield ()
 
@@ -175,11 +175,46 @@ class BoardModel(db: Database)(implicit ec: ExecutionContext) {
   }
 
   def resign(boardId: String, playerId: Int): Future[Boolean] = {
-    db.run(DBAction.resign(boardId, playerId)).map(_ > 0)
+    db.run(DBAction.setResign(boardId, playerId)).map(_ > 0)
   }
 
   def draw(boardId: String, playerId: Int): Future[Boolean] = {
-    db.run(DBAction.draw(boardId, playerId)).map(_ > 0)
+    db.run(DBAction.setDraw(boardId, playerId)).map(_ > 0)
+  }
+
+  def rematch(boardId: String, playerId: Int): Future[Board] = {
+
+    for {
+      Some(board) <- db.run(DBAction.getBoardById(boardId))
+      Some(player) <- db.run(DBAction.getPlayerById(playerId))
+      rematchOpt <- db.run(DBAction.getRematchOf(boardId))
+      rematch <- rematchOpt match {
+        case Some(rematch) =>
+          joinBoard(rematch.id, player.userId).map(_ => rematch)
+        case None => createBoard(board.gameId, player.userId)
+      }
+      _ <- db.run(DBQuery.boardById(rematch.id)
+        .map(_.rematchBaseId).update(Some(board.id)))
+    } yield rematch
+  }
+
+  def fork(boardId: String, playerId: Int, ply: Int): Future[Board] = {
+
+    for {
+      Some(board) <- db.run(DBAction.getBoardById(boardId))
+      Some(player) <- db.run(DBAction.getPlayerById(playerId))
+      fork <- createBoard(board.gameId, player.userId)
+      _ <- db.run(DBQuery.boardById(fork.id)
+        .map(_.forkBaseId).update(Some(board.id)))
+    } yield fork
+  }
+
+  def getRematch(boardId: String): Future[Option[Board]] = {
+    db.run(DBAction.getRematchOf(boardId))
+  }
+
+  def getForks(boardId: String): Future[Seq[Board]] = {
+    db.run(DBAction.getForksOf(boardId))
   }
 
   def searchBoards(query: SearchQuery[BoardFilter]):
@@ -324,10 +359,16 @@ class BoardModel(db: Database)(implicit ec: ExecutionContext) {
     def deleteBoard(boardId: String) =
       DBQuery.boardById(boardId).delete
 
-    def resign(boardId: String, playerId: Int, resign: Boolean = true) =
+    def setResign(boardId: String, playerId: Int, resign: Boolean = true) =
       DBQuery.playerById(playerId).map(_.resign).update(resign)
 
-    def draw(boardId: String, playerId: Int, draw: Boolean = true) =
+    def setDraw(boardId: String, playerId: Int, draw: Boolean = true) =
       DBQuery.playerById(playerId).map(_.draw).update(draw)
+
+    def getRematchOf(boardId: String) =
+      Boards.filter(_.rematchBaseId === boardId).result.headOption
+
+    def getForksOf(boardId: String) =
+      Boards.filter(_.forkBaseId === boardId).result
   }
 }

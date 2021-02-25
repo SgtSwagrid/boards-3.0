@@ -5,150 +5,208 @@ import scala.collection.mutable
 import slick.jdbc.MySQLProfile.api.Database
 import akka.actor.{Actor, ActorRef, Props}
 import models.{BoardModel, UserModel}
+import models.{Board, Player}
 import models.protocols.BoardProtocol._
 import scala.concurrent.Future
 
-class BoardManager(db: Database)
+class BoardManager(boardId: String, db: Database)
     (implicit ec: ExecutionContext) extends Actor {
 
   private val boards = new BoardModel(db)
   private val users = new UserModel(db)
 
-  private val actors = mutable.Map[String, List[ActorRef]]()
+  private val spectators = mutable.Set[ActorRef]()
 
-  def receive = { case (actor: ActorRef, userId: Int, msg: BoardRequest) =>
+  def receive = { case (actor: ActorRef, thisUserId: Int, req: BoardRequest) =>
     
     for {
-      board <- boards.getBoard(msg.boardId)
-      player <- boards.getPlayerByUser(msg.boardId, userId)
-    } msg match {
+      Some(board) <- boards.getBoard(boardId)
+      thisPlayer <- boards.getPlayerByUser(boardId, thisUserId)
+    } req match {
 
-      case NewSpectator(boardId) => {
+      case NewSpectator =>
+        newSpectator(actor)
 
-        actors += boardId -> (actor +: actors.get(boardId).getOrElse(Nil))
-
-        boards.getBoard(boardId).foreach(actor ! SetBoard(_))
-
-        boards.getPlayersWithUsers(boardId)
-          .map { case (p, u) => actor ! SetPlayers(p, u) }
-
-        boards.getActions(boardId).map(a => actor !
-          PushActions(a.map(a => ActionId(a.action, a.turnOrder))))
-      }
-
-      case JoinGame(boardId, joiningId) =>
-
-        if (userId == joiningId)
-
-          for {
-            _ <- boards.joinBoard(boardId, joiningId)
-            (players, users) <- boards.getPlayersWithUsers(boardId)
-            
-          } broadcast(boardId, SetPlayers(players, users))
+      case AddPlayer(targetUserId) =>
+        addPlayer(thisUserId, targetUserId)
       
-      case RemovePlayer(boardId, playerId) =>
+      case RemovePlayer(targetPlayerId) =>
+        removePlayer(thisPlayer, targetPlayerId)
 
-        if (player.exists(p => p.isOwner || p.id == playerId))
+      case PromotePlayer(targetPlayerId) =>
+        promotePlayer(thisPlayer, targetPlayerId)
 
-          for {
-            _ <- boards.removePlayer(boardId, playerId)
-            (players, users) <- boards.getPlayersWithUsers(boardId)
+      case DemotePlayer(targetPlayerId) =>
+        demotePlayer(thisPlayer, targetPlayerId)
 
-          } if (players.nonEmpty) {
-            broadcast(boardId, SetPlayers(players, users))
-          } else broadcast(boardId, SetBoard(None))
-
-      case PromotePlayer(boardId, playerId) =>
-
-        if (player.exists(_.isOwner))
-
-          for {
-            promoted <- boards.promotePlayer(boardId, playerId)
-            (players, users) <- boards.getPlayersWithUsers(boardId)
-
-          } broadcast(boardId, SetPlayers(players, users))
-
-      case DemotePlayer(boardId, playerId) =>
-
-        if (player.exists(_.isOwner))
-
-          for {
-            demoted <- boards.demotePlayer(boardId, playerId)
-            (players, users) <- boards.getPlayersWithUsers(boardId)
-
-          } broadcast(boardId, SetPlayers(players, users))
+      case StartGame =>
+        startGame(thisPlayer)
       
-      case DeleteGame(boardId) => {
+      case DeleteGame =>
+        deleteGame(thisPlayer)
 
-        if (player.exists(_.isOwner)) {
+      case ResignGame =>
+        resignGame(thisPlayer)
 
-          boards.deleteBoard(boardId)
-          broadcast(boardId, SetBoard(None))
-        }
+      case DrawGame =>
+        drawGame(thisPlayer)
+
+      case RematchGame =>
+        rematchGame(actor, thisPlayer)
+
+      case ForkGame(ply) =>
+        forkGame(actor, thisPlayer, ply)
+
+      case TakeAction(actionId) =>
+        takeAction(board, thisPlayer, actionId)
+    }
+  }
+
+  private def updateSession(actor: ActorRef) = {
+
+    for {
+      board <- boards.getBoard(boardId)
+      players <- boards.getPlayers(boardId)
+      users <- boards.getUsers(boardId)
+      rematch <- boards.getRematch(boardId)
+      forks <- boards.getForks(boardId)
+
+    } yield board match {
+      case Some(board) => {
+        val cleanedUsers = users.map(_.copy(password = ""))
+        actor ! UpdateSession(board, players, cleanedUsers, rematch, forks)
       }
+      case None => actor ! Redirect(None)
+    } 
+  }
 
-      case StartGame(boardId) => {
+  private def newSpectator(actor: ActorRef) = {
 
-        if (player.exists(_.isOwner))
+    spectators += actor
 
-          for {
-            started <- boards.startGame(boardId)
-            board <- boards.getBoard(boardId)
+    for {
+      _ <- updateSession(actor)
+      actions <- boards.getActions(boardId)
+      
+    } actor ! PushActions(actions.map { action =>
+      ActionLog(action.action, action.turnOrder)
+    })
+  }
 
-          } if (started) broadcast(boardId, SetBoard(board))
-      }
+  private def addPlayer(thisUserId: Int, targetUserId: Int) = {
 
-      case ResignGame(boardId) => {
+    if (thisUserId == targetUserId) {
 
-        player foreach { player =>
-          
-          for {
-            _ <- boards.resign(boardId, player.id)
-            (players, users) <- boards.getPlayersWithUsers(boardId)
+      for (_ <- boards.joinBoard(boardId, targetUserId))
+        spectators.foreach(updateSession)
+    }
+  }
 
-          } broadcast(boardId, SetPlayers(players, users))
-        }
-      }
+  private def removePlayer(thisPlayer: Option[Player], targetPlayerId: Int) = {
 
-      case DrawGame(boardId) => {
+    if (thisPlayer.exists(p => p.isOwner || p.id == targetPlayerId)) {
 
-        player foreach { player =>
-          
-          for {
-            _ <- boards.draw(boardId, player.id)
-            (players, users) <- boards.getPlayersWithUsers(boardId)
+      for (_ <- boards.removePlayer(boardId, targetPlayerId))
+        spectators.foreach(updateSession)
+    }
+  }
 
-          } broadcast(boardId, SetPlayers(players, users))
-        }
-      }
+  private def promotePlayer(thisPlayer: Option[Player], targetPlayerId: Int) = {
 
-      case TakeAction(boardId, actionId) => {
+    if (thisPlayer.exists(_.isOwner)) {
 
-        player foreach { player =>
+      for (_ <- boards.promotePlayer(boardId, targetPlayerId))
+        spectators.foreach(updateSession)
+    }
+  }
 
-          if (board.exists(_.ongoing)) {
+  private def demotePlayer(thisPlayer: Option[Player], targetPlayerId: Int) = {
 
-            for {
-              _ <- boards.takeAction(boardId, actionId, player.turnOrder)
-              (players, users) <- boards.getPlayersWithUsers(boardId)
-            } {
-              val action = ActionId(actionId, player.turnOrder)
-              broadcast(boardId, PushActions(Seq(action)))
-              broadcast(boardId, SetPlayers(players, users))
-            }
-          }
-        }
+    if (thisPlayer.exists(_.isOwner)) {
+
+      for (_ <- boards.demotePlayer(boardId, targetPlayerId))
+        spectators.foreach(updateSession)
+    }
+  }
+
+  private def startGame(thisPlayer: Option[Player]) = {
+
+    if (thisPlayer.exists(_.isOwner)) {
+
+      for (_ <- boards.startGame(boardId))
+        spectators.foreach(updateSession)
+    }
+  }
+
+  private def deleteGame(thisPlayer: Option[Player]) = {
+
+    if (thisPlayer.exists(_.isOwner)) {
+
+      for (_ <- boards.deleteBoard(boardId))
+        spectators.foreach(updateSession)
+    }
+  }
+
+  private def resignGame(thisPlayer: Option[Player]) = {
+
+    thisPlayer.map { thisPlayer =>
+
+      for (_ <- boards.resign(boardId, thisPlayer.id))
+        spectators.foreach(updateSession)
+    }
+  }
+
+  private def drawGame(thisPlayer: Option[Player]) = {
+
+    thisPlayer.map { thisPlayer =>
+
+      for (_ <- boards.draw(boardId, thisPlayer.id))
+        spectators.foreach(updateSession)
+    }
+  }
+
+  private def rematchGame(actor: ActorRef, thisPlayer: Option[Player]) = {
+
+    thisPlayer.map { thisPlayer =>
+
+      for (rematch <- boards.rematch(boardId, thisPlayer.id)) {
+        spectators.filter(_ != actor).foreach(updateSession)
+        actor ! Redirect(Some(rematch))
       }
     }
   }
 
-  private def broadcast(boardId: String, res: BoardResponse) = {
-    actors.get(boardId).getOrElse(Nil).foreach(_ ! res)
+  private def forkGame(actor: ActorRef, thisPlayer: Option[Player], ply: Int) = {
+
+    thisPlayer.map { thisPlayer =>
+    
+      for (fork <- boards.fork(boardId, thisPlayer.id, ply)) {
+        spectators.filter(_ != actor).foreach(updateSession)
+        actor ! Redirect(Some(fork))
+      }
+    }
+  }
+
+  private def takeAction(board: Board, thisPlayer: Option[Player], actionId: Int) = {
+
+    thisPlayer.map { thisPlayer =>
+
+      if (board.ongoing) {
+      
+        for {
+          _ <- boards.takeAction(boardId, actionId, thisPlayer.turnOrder)
+          _ <- Future.sequence(spectators.map(updateSession))
+        } {
+          val actionLog = ActionLog(actionId, thisPlayer.turnOrder)
+          spectators.foreach(_ ! PushActions(Seq(actionLog)))
+        }
+      }
+    }
   }
 }
 
 object BoardManager {
 
-  def props(db: Database)(implicit ec: ExecutionContext) =
-    Props(new BoardManager(db))
+  def props(boardId: String, db: Database)(implicit ec: ExecutionContext) =
+    Props(new BoardManager(boardId, db))
 }

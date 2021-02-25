@@ -7,11 +7,12 @@ CREATE TABLE Boards (
   GameId INT NOT NULL,
   IsPublic BOOLEAN NOT NULL,
   Status INT UNSIGNED,
-  RematchBoardId CHAR(5),
-  ParentBoardId CHAR(5),
+  RematchBaseId CHAR(5),
+  ForkBaseId CHAR(5),
+  ForkPly INT,
   Modified TEXT,
-  FOREIGN KEY RematchBoardFk (RematchBoardId) REFERENCES Boards(Id) ON DELETE SET NULL,
-  FOREIGN KEY ParentBoardFk (ParentBoardId) REFERENCES Boards(Id) ON DELETE SET NULL
+  FOREIGN KEY RematchBaseFk (RematchBaseId) REFERENCES Boards(Id) ON DELETE SET NULL,
+  FOREIGN KEY ForkBaseFk (ForkBaseId) REFERENCES Boards(Id) ON DELETE SET NULL
 );
 
 CREATE TABLE Users (

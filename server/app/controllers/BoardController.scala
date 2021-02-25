@@ -1,6 +1,7 @@
 package controllers
 
 import javax.inject._
+import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 import play.api.mvc._, play.api.libs.streams.ActorFlow
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
@@ -22,7 +23,7 @@ class BoardController @Inject()
   private val boards = new BoardModel(db)
   private val users = new UserModel(db)
 
-  private val manager = system.actorOf(BoardManager.props(db))
+  private val managers = mutable.Map[String, ActorRef]()
   
   def create(gameId: Int) = Action.async { implicit request =>
     withUser { user =>
@@ -33,6 +34,10 @@ class BoardController @Inject()
   }
 
   def socket(boardId: String) = WebSocket.accept[String, String] { request =>
+
+    val manager = managers.getOrElseUpdate(boardId,
+      system.actorOf(BoardManager.props(boardId, db)))
+
     ActorFlow.actorRef { out =>
       val userId = request.session("userId").toInt
       BoardActor.props(out, manager, boardId, userId)

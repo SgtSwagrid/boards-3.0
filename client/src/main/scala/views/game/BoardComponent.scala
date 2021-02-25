@@ -106,7 +106,7 @@ import games.core.State.{AnyState, Ongoing}
   private def tryPlace(pos: game.VecT) = {
 
     val place = session.placesAt.get(pos).headOption
-    place.foreach(takeAction)
+    place.foreach(session.takeAction)
     place.isDefined
   }
 
@@ -116,21 +116,11 @@ import games.core.State.{AnyState, Ongoing}
     val valid = session.actions.contains(move)
       
     if (valid) {
-      takeAction(move)
+      session.takeAction(move)
       setState(_.copy(selected = None))
     }
 
     valid
-  }
-
-  private def takeAction(action: Action[game.VecT]) {
-
-    val actionId = session.sortedActions.indexOf(action)
-    
-    if (actionId != -1) {
-      val request: BoardRequest = TakeAction(session.board.id, actionId)
-      props.session.socket.send(request.asJson.toString)
-    }
   }
 
   private def cursorPos(event: MouseEvent) = {
