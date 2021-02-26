@@ -4,5 +4,6 @@ target/
 .ammonite/
 .bsp/
 .vscode/
+.idea/
 metals.sbt
 boards.code-workspace
